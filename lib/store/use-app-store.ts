@@ -1,109 +1,120 @@
 import { create } from "zustand";
-import { UserRole, ServiceRequest, WorkerProfile, ServiceCategory, AuditLog, ServiceAddress } from "../types";
-import { INITIAL_CATEGORIES, INITIAL_WORKERS, INITIAL_REQUESTS, INITIAL_AUDIT_LOGS } from "./mock-data";
+import {
+  UserRole,
+  ServiceCategory,
+  WorkerProfile,
+  ServiceRequest,
+  AuditLog,
+  RequestStatus,
+} from "../types";
+import {
+  INITIAL_CATEGORIES,
+  INITIAL_WORKERS,
+  INITIAL_REQUESTS,
+  INITIAL_AUDIT_LOGS,
+} from "./mock-data";
+import {
+  fetchSupabaseCategories,
+  fetchSupabaseWorkers,
+  fetchSupabaseRequests,
+  saveSupabaseRequest,
+} from "../supabase/db-init";
 
 interface AppState {
+  // Current Active Role
   activeRole: UserRole;
-  requests: ServiceRequest[];
-  workers: WorkerProfile[];
+  setActiveRole: (role: UserRole) => void;
+
+  // Domain Collections
   categories: ServiceCategory[];
+  workers: WorkerProfile[];
+  requests: ServiceRequest[];
   auditLogs: AuditLog[];
 
+  // Database Initialization
+  initSupabaseData: () => Promise<void>;
+
   // Actions
-  setActiveRole: (role: UserRole) => void;
-  createServiceRequest: (payload: {
-    categoryId: string;
-    title: string;
-    problemDescription: string;
-    preferredDate: string;
-    preferredTimeSlot: string;
-    address: ServiceAddress;
-    photos?: string[];
-  }) => string; // returns generated request ID
+  createRequest: (
+    req: Omit<
+      ServiceRequest,
+      "id" | "status" | "createdAt" | "consumerName" | "consumerPhone" | "amount"
+    >
+  ) => string;
 
   assignWorker: (requestId: string, workerId: string) => void;
   acceptJob: (requestId: string) => void;
   rejectJob: (requestId: string, reason: string) => void;
   startJob: (requestId: string) => void;
   completeJob: (requestId: string, notes: string, photos?: string[]) => void;
-  processPayment: (requestId: string) => void;
+  processPayment: (requestId: string, paymentMethod: string) => void;
   submitRating: (requestId: string, stars: number, review?: string, issues?: string[]) => void;
+
+  // Audit Logging
+  addAuditLog: (action: string, actorName: string, actorRole: UserRole, details: string) => void;
   resetDemoData: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  activeRole: "CONSUMER",
-  requests: INITIAL_REQUESTS,
-  workers: INITIAL_WORKERS,
-  categories: INITIAL_CATEGORIES,
-  auditLogs: INITIAL_AUDIT_LOGS,
-
+  activeRole: "MEMBER",
   setActiveRole: (role) => set({ activeRole: role }),
 
-  createServiceRequest: (payload) => {
-    const category = get().categories.find((c) => c.id === payload.categoryId);
-    const categoryName = category ? category.name : "Service";
-    const basePrice = category ? category.basePrice : 500;
-    const serviceFee = Math.round(basePrice * 0.1);
-    const gst = Math.round((basePrice + serviceFee) * 0.18);
-    const total = basePrice + serviceFee + gst;
+  categories: INITIAL_CATEGORIES,
+  workers: INITIAL_WORKERS,
+  requests: INITIAL_REQUESTS,
+  auditLogs: INITIAL_AUDIT_LOGS,
 
-    const newId = `REQ-${1000 + get().requests.length + 1}`;
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+  initSupabaseData: async () => {
+    try {
+      const [dbCats, dbWorkers, dbReqs] = await Promise.all([
+        fetchSupabaseCategories(),
+        fetchSupabaseWorkers(),
+        fetchSupabaseRequests(),
+      ]);
+
+      set((state) => ({
+        categories: dbCats || state.categories,
+        workers: dbWorkers || state.workers,
+        requests: dbReqs || state.requests,
+      }));
+    } catch (e) {
+      console.warn("Using fallback local dataset for Supabase:", e);
+    }
+  },
+
+  createRequest: (reqData) => {
+    const newId = `REQ-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    const basePrice =
+      get().categories.find((c) => c.id === reqData.categoryId)?.basePrice || 350;
 
     const newRequest: ServiceRequest = {
+      ...reqData,
       id: newId,
-      consumerId: "cons-current",
-      consumerName: "Priya Verma",
-      consumerPhone: "+91 98200 11223",
-      categoryId: payload.categoryId,
-      categoryName,
-      title: payload.title || `${categoryName} Request`,
-      problemDescription: payload.problemDescription,
-      preferredDate: payload.preferredDate,
-      preferredTimeSlot: payload.preferredTimeSlot,
-      address: payload.address,
-      photos: payload.photos || [],
-      status: "UNDER_REVIEW",
-      createdAt: timestamp,
+      status: "REQUESTED",
+      createdAt: new Date().toISOString(),
+      consumerName: "Rahul Sharma",
+      consumerPhone: "+91 98199 88776",
       amount: {
         base: basePrice,
-        serviceFee,
-        gst,
-        total,
+        fee: 50,
+        tax: Math.round((basePrice + 50) * 0.18),
+        total: Math.round((basePrice + 50) * 1.18),
       },
-      timeline: [
-        {
-          status: "REQUESTED",
-          label: "Request Submitted",
-          timestamp,
-          description: "Submitted by Priya Verma",
-        },
-        {
-          status: "UNDER_REVIEW",
-          label: "Admin Reviewing",
-          timestamp,
-          description: "Cooperative Admin is matching candidate workers",
-        },
-      ],
-    };
-
-    const newAudit: AuditLog = {
-      id: `audit-${Date.now()}`,
-      timestamp,
-      action: "CREATE_REQUEST",
-      actorRole: "CONSUMER",
-      actorName: "Priya Verma",
-      details: `Created service request ${newId} for ${categoryName}`,
     };
 
     set((state) => ({
       requests: [newRequest, ...state.requests],
-      auditLogs: [newAudit, ...state.auditLogs],
     }));
+
+    get().addAuditLog(
+      "CREATE_REQUEST",
+      newRequest.consumerName,
+      "MEMBER",
+      `Created service request ${newId} for ${newRequest.categoryName}`
+    );
+
+    // Save asynchronously to Supabase
+    saveSupabaseRequest(newRequest);
 
     return newId;
   },
@@ -112,273 +123,196 @@ export const useAppStore = create<AppState>((set, get) => ({
     const worker = get().workers.find((w) => w.id === workerId);
     if (!worker) return;
 
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = {
+            ...r,
+            assignedWorkerId: workerId,
+            status: "WORKER_ASSIGNED" as RequestStatus,
+          };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+
+      return { requests: updatedRequests };
     });
 
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "WORKER_ASSIGNED",
-          assignedWorkerId: worker.id,
-          assignedWorkerName: worker.name,
-          timeline: [
-            ...req.timeline,
-            {
-              status: "WORKER_ASSIGNED",
-              label: "Worker Assigned",
-              timestamp,
-              description: `Assigned to ${worker.name} (${worker.workerCode}) from ${worker.societyName}`,
-            },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "ASSIGN_WORKER",
-          actorRole: "COOPERATIVE_ADMIN",
-          actorName: "Admin Sharma",
-          details: `Assigned ${worker.name} (${worker.workerCode}) to ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
+    get().addAuditLog(
+      "ASSIGN_WORKER",
+      "Meera Kulkarni (Cooperative Admin)",
+      "COOPERATIVE_ADMIN",
+      `Assigned ${worker.name} (${worker.workerCode}) to request ${requestId}`
+    );
   },
 
   acceptJob: (requestId) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = { ...r, status: "WORKER_ACCEPTED" as RequestStatus };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
     });
 
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "WORKER_ACCEPTED",
-          timeline: [
-            ...req.timeline,
-            {
-              status: "WORKER_ACCEPTED",
-              label: "Worker Accepted",
-              timestamp,
-              description: "Worker confirmed job assignment & schedule",
-            },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "ACCEPT_JOB",
-          actorRole: "WORKER",
-          actorName: "Ramesh Sharma",
-          details: `Worker accepted assignment for ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
+    get().addAuditLog(
+      "ACCEPT_JOB",
+      "Assigned Worker",
+      "WORKER",
+      `Accepted assignment for job ${requestId}`
+    );
   },
 
   rejectJob: (requestId, reason) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = {
+            ...r,
+            assignedWorkerId: undefined,
+            status: "REJECTED" as RequestStatus,
+          };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
     });
 
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "ASSIGNMENT_PENDING",
-          assignedWorkerId: undefined,
-          assignedWorkerName: undefined,
-          rejectionReason: reason,
-          timeline: [
-            ...req.timeline,
-            {
-              status: "ASSIGNMENT_PENDING",
-              label: "Assignment Rejected - Reassignment Needed",
-              timestamp,
-              description: `Worker rejected: "${reason}". Returned to admin assignment queue.`,
-            },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "REJECT_JOB",
-          actorRole: "WORKER",
-          actorName: "Ramesh Sharma",
-          details: `Worker rejected job ${requestId}. Reason: ${reason}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
+    get().addAuditLog(
+      "REJECT_JOB",
+      "Worker",
+      "WORKER",
+      `Rejected job ${requestId}. Reason: ${reason}`
+    );
   },
 
   startJob: (requestId) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = { ...r, status: "IN_PROGRESS" as RequestStatus };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
     });
 
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "IN_PROGRESS",
-          timeline: [
-            ...req.timeline,
-            {
-              status: "IN_PROGRESS",
-              label: "Service In Progress",
-              timestamp,
-              description: "Worker arrived on site and began work",
+    get().addAuditLog(
+      "START_JOB",
+      "Worker",
+      "WORKER",
+      `Started execution for service ${requestId}`
+    );
+  },
+
+  completeJob: (requestId, notes, photos = []) => {
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = {
+            ...r,
+            status: "COMPLETION_PENDING" as RequestStatus,
+            completionNotes: notes,
+            evidencePhotos: photos,
+          };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
+    });
+
+    get().addAuditLog(
+      "COMPLETE_JOB",
+      "Worker",
+      "WORKER",
+      `Submitted completion report for job ${requestId}`
+    );
+  },
+
+  processPayment: (requestId, paymentMethod) => {
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = { ...r, status: "PAID" as RequestStatus };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
+    });
+
+    get().addAuditLog(
+      "PROCESS_PAYMENT",
+      "Consumer",
+      "MEMBER",
+      `Paid for request ${requestId} via ${paymentMethod}`
+    );
+  },
+
+  submitRating: (requestId, stars, review = "", issues = []) => {
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = {
+            ...r,
+            status: "COMPLETED" as RequestStatus,
+            rating: {
+              stars,
+              review,
+              issues,
+              createdAt: new Date().toISOString(),
             },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "START_JOB",
-          actorRole: "WORKER",
-          actorName: "Ramesh Sharma",
-          details: `Started service execution for ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
+          };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
+    });
+
+    get().addAuditLog(
+      "SUBMIT_RATING",
+      "Consumer",
+      "MEMBER",
+      `Submitted ${stars} star rating for job ${requestId}`
+    );
+  },
+
+  addAuditLog: (action, actorName, actorRole, details) => {
+    const newLog: AuditLog = {
+      id: `LOG-${Date.now()}`,
+      action,
+      actorName,
+      actorRole,
+      details,
+      timestamp: new Date().toISOString(),
+    };
+
+    set((state) => ({
+      auditLogs: [newLog, ...state.auditLogs],
     }));
   },
 
-  completeJob: (requestId, notes, photos) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "COMPLETION_PENDING",
-          completionNotes: notes,
-          completionPhotos: photos || [],
-          timeline: [
-            ...req.timeline,
-            {
-              status: "COMPLETION_PENDING",
-              label: "Work Finished - Pending Confirmation",
-              timestamp,
-              description: "Worker submitted completion notes. Awaiting consumer confirmation & payment.",
-            },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "COMPLETE_JOB",
-          actorRole: "WORKER",
-          actorName: "Ramesh Sharma",
-          details: `Completed work for ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
-  },
-
-  processPayment: (requestId) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          status: "PAID",
-          paymentStatus: "SUCCESS",
-          timeline: [
-            ...req.timeline,
-            {
-              status: "COMPLETED",
-              label: "Service Confirmed",
-              timestamp,
-            },
-            {
-              status: "PAID",
-              label: "Payment Success",
-              timestamp,
-              description: `Payment of ₹${req.amount?.total} processed via Razorpay`,
-            },
-          ],
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "PROCESS_PAYMENT",
-          actorRole: "CONSUMER",
-          actorName: "Priya Verma",
-          details: `Payment processed for ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
-  },
-
-  submitRating: (requestId, stars, review, issues) => {
-    const timestamp = new Date().toLocaleString("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
-    set((state) => ({
-      requests: state.requests.map((req) => {
-        if (req.id !== requestId) return req;
-        return {
-          ...req,
-          rating: { stars, review, issues },
-        };
-      }),
-      auditLogs: [
-        {
-          id: `audit-${Date.now()}`,
-          timestamp,
-          action: "SUBMIT_RATING",
-          actorRole: "CONSUMER",
-          actorName: "Priya Verma",
-          details: `Submitted ${stars}-star rating for ${requestId}`,
-        },
-        ...state.auditLogs,
-      ],
-    }));
-  },
-
-  resetDemoData: () =>
+  resetDemoData: () => {
     set({
-      requests: INITIAL_REQUESTS,
-      workers: INITIAL_WORKERS,
       categories: INITIAL_CATEGORIES,
+      workers: INITIAL_WORKERS,
+      requests: INITIAL_REQUESTS,
       auditLogs: INITIAL_AUDIT_LOGS,
-    }),
+    });
+  },
 }));

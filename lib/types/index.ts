@@ -1,4 +1,4 @@
-export type UserRole = "CONSUMER" | "WORKER" | "COOPERATIVE_ADMIN" | "PLATFORM_AUTHORITY";
+export type UserRole = "MEMBER" | "CONSUMER" | "WORKER" | "COOPERATIVE_ADMIN" | "PLATFORM_AUTHORITY";
 
 export type RequestStatus =
   | "REQUESTED"
@@ -16,6 +16,7 @@ export type RequestStatus =
   | "CLOSED"
   | "CANCELLED"
   | "DISPUTED"
+  | "REJECTED"
   | "NO_WORKER_AVAILABLE";
 
 export type PaymentStatus =
@@ -39,8 +40,8 @@ export interface ServiceCategory {
   iconName: string;
   description: string;
   subServices: string[];
-  workerCount: number;
-  photoRequirement: PhotoRequirement;
+  workerCount?: number;
+  photoRequirement?: PhotoRequirement;
   basePrice: number;
 }
 
@@ -56,9 +57,11 @@ export interface WorkerProfile {
   name: string;
   phone: string;
   societyName: string;
-  federationName: string;
-  verificationStatus: VerificationStatus;
-  isAvailable: boolean;
+  federationName?: string;
+  verificationStatus?: VerificationStatus;
+  isAvailable?: boolean;
+  status?: string;
+  availableNow?: boolean;
   rating: number;
   jobsCompleted: number;
   skills: string[];
@@ -73,9 +76,23 @@ export interface ServiceAddress {
   city: string;
 }
 
+export interface ServiceRequestAmount {
+  base: number;
+  fee: number;
+  tax: number;
+  total: number;
+}
+
+export interface ServiceRequestRating {
+  stars: number;
+  review?: string;
+  issues?: string[];
+  createdAt?: string;
+}
+
 export interface ServiceRequest {
   id: string; // e.g. REQ-1001
-  consumerId: string;
+  consumerId?: string;
   consumerName: string;
   consumerPhone: string;
   categoryId: string;
@@ -86,39 +103,29 @@ export interface ServiceRequest {
   preferredTimeSlot: string; // e.g. "Morning (8am – 12pm)"
   address: ServiceAddress;
   photos?: string[];
+  evidencePhotos?: string[];
   urgent?: boolean;
   status: RequestStatus;
   assignedWorkerId?: string;
   assignedWorkerName?: string;
+  rejectionReason?: string;
   createdAt: string;
-  timeline: {
+  amount?: ServiceRequestAmount;
+  rating?: ServiceRequestRating;
+  timeline?: {
     status: RequestStatus;
     label: string;
     timestamp: string;
     description?: string;
   }[];
   completionNotes?: string;
-  completionPhotos?: string[];
-  amount?: {
-    base: number;
-    serviceFee: number;
-    gst: number;
-    total: number;
-  };
-  paymentStatus?: PaymentStatus;
-  rating?: {
-    stars: number;
-    review?: string;
-    issues?: string[];
-  };
-  rejectionReason?: string;
 }
 
 export interface AuditLog {
   id: string;
-  timestamp: string;
   action: string;
-  actorRole: UserRole;
   actorName: string;
+  actorRole: UserRole;
   details: string;
+  timestamp: string;
 }

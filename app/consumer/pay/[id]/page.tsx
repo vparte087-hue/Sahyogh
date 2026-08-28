@@ -6,59 +6,38 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShieldCheck, CreditCard, QrCode, Building2, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CreditCard, ShieldCheck, CheckCircle2, QrCode } from "lucide-react";
 
-export default function PayPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ConsumerPaymentPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { requests, processPayment } = useAppStore();
 
   const request = requests.find((r) => r.id === resolvedParams.id) || requests[0];
-  const amount = request.amount || { base: 500, serviceFee: 50, gst: 99, total: 649 };
-
-  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CARD" | "NETBANKING">("UPI");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaidSuccess, setIsPaidSuccess] = useState(request.status === "PAID");
 
   const handlePay = () => {
     setIsProcessing(true);
     setTimeout(() => {
-      processPayment(request.id);
+      processPayment(request.id, paymentMethod);
       setIsProcessing(false);
       setIsPaidSuccess(true);
     }, 1500);
   };
 
-  if (isPaidSuccess) {
-    return (
-      <div className="max-w-xl mx-auto py-12 text-center space-y-6">
-        <div className="w-16 h-16 bg-emerald-100 text-success rounded-full flex items-center justify-center mx-auto shadow-md">
-          <CheckCircle2 className="w-10 h-10" />
-        </div>
-        <h1 className="text-2xl font-bold text-text-primary">Payment Successful!</h1>
-        <p className="text-sm text-text-secondary">
-          Thank you! Payment of <strong className="text-primary">₹{amount.total}</strong> has been confirmed for {request.id}.
-        </p>
-
-        <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
-          <Button
-            variant="accent"
-            size="lg"
-            onClick={() => router.push(`/consumer/rate/${request.id}`)}
-          >
-            Rate Worker Experience ★
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => router.push(`/consumer/track/${request.id}`)}
-          >
-            View Receipt / Timeline
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const amount = request.amount || {
+    base: 350,
+    fee: 50,
+    tax: 72,
+    total: 472,
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -69,118 +48,130 @@ export default function PayPage({ params }: { params: Promise<{ id: string }> })
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Tracking
         </Link>
-        <h1 className="text-2xl font-bold text-text-primary">Confirm & Pay</h1>
-        <p className="text-sm text-text-secondary">
-          Review payment summary and choose your digital payment method.
-        </p>
+        <span className="block text-xs font-bold text-text-secondary uppercase tracking-widest">
+          STEP 3 OF 3
+        </span>
+        <h1 className="text-2xl font-bold text-text-primary mt-1">Payment & Invoice</h1>
       </div>
 
-      {/* Sandbox Notice Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold block">SANDBOX TEST MODE</span>
-          This is a simulated Razorpay payment gateway checkout. No real money will be charged.
-        </div>
-      </div>
-
-      {/* Order Summary */}
-      <Card className="space-y-4">
-        <h3 className="text-xs font-bold tracking-widest text-text-secondary uppercase">
-          ORDER SUMMARY — {request.id}
-        </h3>
-
-        <div className="space-y-2 text-sm text-text-primary border-b border-border pb-4">
-          <div className="flex justify-between">
-            <span>{request.categoryName} Base Service Fee</span>
-            <span className="font-semibold">₹{amount.base}</span>
+      {isPaidSuccess ? (
+        <Card className="p-8 text-center space-y-4 border-success bg-emerald-50/50">
+          <div className="w-16 h-16 rounded-full bg-success text-white flex items-center justify-center mx-auto shadow-md">
+            <CheckCircle2 className="w-10 h-10" />
           </div>
+          <h2 className="text-2xl font-bold text-text-primary">Payment Successful!</h2>
+          <p className="text-xs text-text-secondary max-w-md mx-auto">
+            ₹{amount.total} paid successfully to <strong>Sahyog Labour Cooperative Federation</strong>.
+          </p>
 
-          <div className="flex justify-between text-xs text-text-secondary">
-            <span>Cooperative Platform Service Fee</span>
-            <span>₹{amount.serviceFee}</span>
+          <div className="pt-4 flex flex-col sm:flex-row justify-center gap-3">
+            <Button
+              variant="accent"
+              size="lg"
+              onClick={() => router.push(`/consumer/rate/${request.id}`)}
+            >
+              Rate Worker Service ★
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => router.push("/consumer/dashboard")}>
+              Return to Dashboard
+            </Button>
           </div>
-
-          <div className="flex justify-between text-xs text-text-secondary">
-            <span>GST (18%)</span>
-            <span>₹{amount.gst}</span>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center text-lg font-bold text-primary pt-1">
-          <span>Total Payable</span>
-          <span className="text-xl text-accent">₹{amount.total}</span>
-        </div>
-      </Card>
-
-      {/* Payment Method Selector */}
-      <Card className="space-y-4">
-        <h3 className="text-xs font-bold tracking-widest text-text-secondary uppercase">
-          SELECT PAYMENT METHOD
-        </h3>
-
-        <div className="space-y-3">
-          <label
-            onClick={() => setPaymentMethod("upi")}
-            className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
-              paymentMethod === "upi"
-                ? "border-primary bg-blue-50/40 ring-1 ring-primary"
-                : "border-border hover:bg-gray-50"
-            }`}
-          >
-            <input type="radio" name="payment" checked={paymentMethod === "upi"} onChange={() => {}} />
-            <QrCode className="w-5 h-5 text-primary" />
-            <div>
-              <span className="font-bold text-sm block">UPI / GPay / PhonePe / Paytm</span>
-              <span className="text-xs text-text-secondary">Instant zero-fee transfer</span>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {/* Order Summary */}
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <span className="text-xs font-mono font-bold text-gray-500">{request.id}</span>
+              <Badge status={request.status} />
             </div>
-          </label>
 
-          <label
-            onClick={() => setPaymentMethod("card")}
-            className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
-              paymentMethod === "card"
-                ? "border-primary bg-blue-50/40 ring-1 ring-primary"
-                : "border-border hover:bg-gray-50"
-            }`}
-          >
-            <input type="radio" name="payment" checked={paymentMethod === "card"} onChange={() => {}} />
-            <CreditCard className="w-5 h-5 text-primary" />
             <div>
-              <span className="font-bold text-sm block">Debit / Credit Card</span>
-              <span className="text-xs text-text-secondary">Visa, Mastercard, RuPay</span>
+              <h3 className="font-bold text-text-primary text-base">{request.title}</h3>
+              <p className="text-xs text-text-secondary mt-0.5">{request.categoryName}</p>
             </div>
-          </label>
 
-          <label
-            onClick={() => setPaymentMethod("netbanking")}
-            className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
-              paymentMethod === "netbanking"
-                ? "border-primary bg-blue-50/40 ring-1 ring-primary"
-                : "border-border hover:bg-gray-50"
-            }`}
-          >
-            <input type="radio" name="payment" checked={paymentMethod === "netbanking"} onChange={() => {}} />
-            <Building2 className="w-5 h-5 text-primary" />
-            <div>
-              <span className="font-bold text-sm block">Net Banking</span>
-              <span className="text-xs text-text-secondary">All major Indian banks supported</span>
+            <div className="space-y-2 text-xs pt-2 border-t border-gray-100">
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Base Service Fare</span>
+                <span className="font-bold text-text-primary">₹{amount.base}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Cooperative Facilitation Fee</span>
+                <span className="font-bold text-text-primary">₹{amount.fee}</span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-text-secondary">GST (18%)</span>
+                <span className="font-bold text-text-primary">₹{amount.tax}</span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm font-extrabold pt-2 border-t border-gray-200">
+                <span className="text-text-primary">Total Payable</span>
+                <span className="text-primary text-lg">₹{amount.total}</span>
+              </div>
             </div>
-          </label>
+          </Card>
+
+          {/* Payment Options */}
+          <Card className="space-y-4">
+            <h3 className="text-xs font-bold tracking-widest text-text-secondary uppercase">
+              SELECT PAYMENT METHOD
+            </h3>
+
+            <div className="space-y-2">
+              <label
+                onClick={() => setPaymentMethod("UPI")}
+                className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  paymentMethod === "UPI" ? "border-primary bg-blue-50/40" : "border-border"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <QrCode className="w-5 h-5 text-primary" />
+                  <div>
+                    <span className="text-xs font-bold text-text-primary block">UPI / GPay / PhonePe</span>
+                    <span className="text-[10px] text-text-secondary block">Instant zero-fee transfer</span>
+                  </div>
+                </div>
+                <input type="radio" name="pay" checked={paymentMethod === "UPI"} readOnly />
+              </label>
+
+              <label
+                onClick={() => setPaymentMethod("CARD")}
+                className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  paymentMethod === "CARD" ? "border-primary bg-blue-50/40" : "border-border"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  <div>
+                    <span className="text-xs font-bold text-text-primary block">Credit / Debit Card</span>
+                    <span className="text-[10px] text-text-secondary block">Visa, MasterCard, RuPay</span>
+                  </div>
+                </div>
+                <input type="radio" name="pay" checked={paymentMethod === "CARD"} readOnly />
+              </label>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-lg text-[11px] text-amber-900 border border-amber-200 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>Razorpay Sandbox Mode Active — No real currency will be charged.</span>
+            </div>
+
+            <Button
+              variant="accent"
+              size="lg"
+              fullWidth
+              onClick={handlePay}
+              disabled={isProcessing}
+              className="shadow-md"
+            >
+              {isProcessing ? "Processing Payment..." : `Pay ₹${amount.total} via Razorpay →`}
+            </Button>
+          </Card>
         </div>
-      </Card>
-
-      {/* Pay CTA */}
-      <Button
-        variant="accent"
-        size="lg"
-        fullWidth
-        disabled={isProcessing}
-        onClick={handlePay}
-        className="shadow-lg py-4 text-base"
-      >
-        {isProcessing ? "Processing Payment..." : `Pay ₹${amount.total}`}
-      </Button>
+      )}
     </div>
   );
 }
