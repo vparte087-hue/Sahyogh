@@ -33,16 +33,16 @@ export default function AssignWorkerPage({ params }: { params: Promise<{ id: str
   );
 
   const filteredWorkers = workers.filter((w) => {
-    if (filterVerified && w.verificationStatus !== "VERIFIED") return false;
-    if (filterAvailable && !w.isAvailable) return false;
+    if (filterAvailable && w.status === "BUSY" && !w.availableNow) return false;
     if (
       filterSkillMatch &&
       !w.skills.some(
-        (s) => s.toLowerCase().includes(request.categoryName.toLowerCase()) || request.categoryName.toLowerCase().includes(s.toLowerCase())
+        (s) =>
+          s.toLowerCase().includes(request.categoryName.toLowerCase()) ||
+          request.categoryName.toLowerCase().includes(s.toLowerCase())
       )
     )
       return false;
-    if (filterAreaMatch && !w.serviceAreas.includes(request.address.locality)) return false;
     return true;
   });
 
