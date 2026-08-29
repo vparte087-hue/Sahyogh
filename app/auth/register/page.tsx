@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
+import { signUpUser } from "@/lib/supabase/auth";
 import { Card } from "@/components/ui/card";
 import {
   User,
@@ -12,8 +13,6 @@ import {
   Phone,
   Mail,
   Lock,
-  Building2,
-  BadgeCheck,
   MapPin,
   Wrench,
   ShieldCheck,
@@ -26,6 +25,9 @@ import {
   Headphones,
   Eye,
   EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 function RegisterContent() {
@@ -40,38 +42,65 @@ function RegisterContent() {
   const [fullName, setFullName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [email, setEmail] = useState("");
-  const [cooperativeName, setCooperativeName] = useState("");
-  const [cooperativeId, setCooperativeId] = useState("");
-  const [workerId, setWorkerId] = useState("");
-  const [primarySkill, setPrimarySkill] = useState("Plumbing Repairs");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [primarySkill, setPrimarySkill] = useState("Plumbing Repairs");
   const [locationCity, setLocationCity] = useState("Thane, Maharashtra");
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const { loginAsRole } = useAppStore();
+  const { setCurrentUser } = useAppStore();
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam === "coordinator") setActiveTab("coordinator");
     else if (roleParam === "worker") setActiveTab("worker");
     else if (roleParam === "customer") setActiveTab("customer");
+    setErrorMsg(null);
+    setSuccessMsg(null);
   }, [searchParams]);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
 
-    if (activeTab === "customer") {
-      loginAsRole("MEMBER");
-      router.push("/consumer/dashboard");
-    } else if (activeTab === "coordinator") {
-      loginAsRole("COOPERATIVE_ADMIN");
-      router.push("/admin/dashboard");
-    } else if (activeTab === "worker") {
-      loginAsRole("WORKER");
-      router.push("/worker/jobs");
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match.");
+      return;
     }
+    if (password.length < 6) {
+      setErrorMsg("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const role: "consumer" | "coordinator" | "worker" =
+      activeTab === "coordinator" ? "coordinator" : activeTab === "worker" ? "worker" : "consumer";
+
+    const { user, error } = await signUpUser(email, password, fullName, mobileNumber, role);
+
+    setIsLoading(false);
+
+    if (error || !user) {
+      setErrorMsg(error || "Registration failed. Please try again.");
+      return;
+    }
+
+    // Store user and redirect
+    setCurrentUser(user);
+
+    setSuccessMsg(`Account created! Welcome, ${user.fullName}. Redirecting...`);
+
+    setTimeout(() => {
+      if (role === "coordinator") router.push("/admin/dashboard");
+      else if (role === "worker") router.push("/worker/jobs");
+      else router.push("/consumer/dashboard");
+    }, 1500);
   };
 
   const themeConfig = {
@@ -111,7 +140,7 @@ function RegisterContent() {
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("customer")}
+          onClick={() => { setActiveTab("customer"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "customer"
               ? "bg-white text-emerald-800 shadow"
@@ -120,11 +149,10 @@ function RegisterContent() {
         >
           <User className="w-3.5 h-3.5" /> Customer
         </button>
-
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("coordinator")}
+          onClick={() => { setActiveTab("coordinator"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "coordinator"
               ? "bg-white text-purple-800 shadow"
@@ -133,11 +161,10 @@ function RegisterContent() {
         >
           <UserCheck className="w-3.5 h-3.5" /> Coordinator
         </button>
-
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("worker")}
+          onClick={() => { setActiveTab("worker"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "worker"
               ? "bg-white text-amber-800 shadow"
@@ -162,13 +189,9 @@ function RegisterContent() {
               {themeConfig.subtitle}
             </p>
           </div>
-
           <div className="text-right">
             <span className="text-xs text-text-secondary">Already have an account? </span>
-            <Link
-              href={`/auth/login?role=${activeTab}`}
-              className="text-xs font-extrabold text-text-primary hover:underline"
-            >
+            <Link href={`/auth/login?role=${activeTab}`} className="text-xs font-extrabold text-text-primary hover:underline">
               Login
             </Link>
           </div>
@@ -176,6 +199,22 @@ function RegisterContent() {
 
         {/* Registration Form */}
         <form onSubmit={handleRegister} className="space-y-4" suppressHydrationWarning>
+
+          {/* Error/Success Banners */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <span className="text-xs font-medium text-red-700">{errorMsg}</span>
+            </div>
+          )}
+          {successMsg && (
+            <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+              <span className="text-xs font-medium text-green-700">{successMsg}</span>
+            </div>
+          )}
+
+          {/* Full Name */}
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
               Full Name *
@@ -196,34 +235,31 @@ function RegisterContent() {
             </div>
           </div>
 
+          {/* Mobile Number */}
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
               Mobile Number *
             </label>
-            <div className="flex gap-2">
-              <div className="px-3.5 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-xs font-bold text-text-primary flex items-center shrink-0">
-                🇮🇳 +91
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <Phone className="w-4 h-4" />
               </div>
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <input
-                  type="tel"
-                  required
-                  suppressHydrationWarning
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value)}
-                  placeholder="Enter 10-digit mobile number"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
-              </div>
+              <input
+                type="tel"
+                required
+                suppressHydrationWarning
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                placeholder="Enter your 10-digit mobile number"
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
+              />
             </div>
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-              Email Address {activeTab !== "coordinator" && "(Optional)"} {activeTab === "coordinator" && "*"}
+              Email Address *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -231,7 +267,7 @@ function RegisterContent() {
               </div>
               <input
                 type="email"
-                required={activeTab === "coordinator"}
+                required
                 suppressHydrationWarning
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -241,296 +277,216 @@ function RegisterContent() {
             </div>
           </div>
 
-          {activeTab === "coordinator" && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                  Cooperative / Society Name *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    suppressHydrationWarning
-                    value={cooperativeName}
-                    onChange={(e) => setCooperativeName(e.target.value)}
-                    placeholder="Enter cooperative or society name"
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                  Cooperative ID *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <BadgeCheck className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    suppressHydrationWarning
-                    value={cooperativeId}
-                    onChange={(e) => setCooperativeId(e.target.value)}
-                    placeholder="Enter cooperative ID"
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
+          {/* Worker-specific: Primary Skill */}
           {activeTab === "worker" && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                  Worker ID (If available)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <BadgeCheck className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    suppressHydrationWarning
-                    value={workerId}
-                    onChange={(e) => setWorkerId(e.target.value)}
-                    placeholder="Enter your worker ID"
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                  Primary Skill / Trade *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Wrench className="w-4 h-4" />
-                  </div>
-                  <select
-                    suppressHydrationWarning
-                    value={primarySkill}
-                    onChange={(e) => setPrimarySkill(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing} bg-white`}
-                  >
-                    <option value="Plumbing Repairs">Plumbing Repairs</option>
-                    <option value="Electrical Wiring & Appliances">Electrical Wiring & Appliances</option>
-                    <option value="Deep House Cleaning">Deep House Cleaning</option>
-                    <option value="Wall Painting">Wall Painting</option>
-                    <option value="Carpentry Services">Carpentry Services</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === "customer" && (
             <div>
               <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                Location / City *
+                Primary Skill *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <MapPin className="w-4 h-4" />
+                  <Wrench className="w-4 h-4" />
                 </div>
-                <input
-                  type="text"
-                  required
+                <select
                   suppressHydrationWarning
-                  value={locationCity}
-                  onChange={(e) => setLocationCity(e.target.value)}
-                  placeholder="Enter your city or area (e.g. Thane West)"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                Password *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  suppressHydrationWarning
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password"
-                  className={`w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
-                <button
-                  type="button"
-                  suppressHydrationWarning
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  value={primarySkill}
+                  onChange={(e) => setPrimarySkill(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing} bg-white`}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                  <option>Plumbing Repairs</option>
+                  <option>Electrical Wiring &amp; Appliances</option>
+                  <option>Deep House Cleaning</option>
+                  <option>Wall Painting &amp; Touch-up</option>
+                  <option>Furniture Repair &amp; Carpentry</option>
+                </select>
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
-                Confirm Password *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  suppressHydrationWarning
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
-                  className={`w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
+          {/* City */}
+          <div>
+            <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
+              City / Area *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <MapPin className="w-4 h-4" />
               </div>
-            </div>
-          </div>
-
-          <div className="pt-1">
-            <label className="flex items-center gap-2 text-xs font-medium text-text-secondary cursor-pointer">
               <input
-                type="checkbox"
+                type="text"
                 required
                 suppressHydrationWarning
-                checked={agreedTerms}
-                onChange={(e) => setAgreedTerms(e.target.checked)}
-                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                value={locationCity}
+                onChange={(e) => setLocationCity(e.target.value)}
+                placeholder="e.g. Thane, Maharashtra"
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
               />
-              I agree to the <a href="#" className="font-bold text-text-primary underline">Terms of Service</a> and <a href="#" className="font-bold text-text-primary underline">Privacy Policy</a>
-            </label>
+            </div>
           </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
+              Password *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                suppressHydrationWarning
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimum 6 characters"
+                className={`w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
+              />
+              <button
+                type="button"
+                suppressHydrationWarning
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
+              Confirm Password *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type="password"
+                required
+                suppressHydrationWarning
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
+              />
+            </div>
+          </div>
+
+          {/* Terms */}
+          <label className="flex items-start gap-3 cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              suppressHydrationWarning
+              required
+              checked={agreedTerms}
+              onChange={(e) => setAgreedTerms(e.target.checked)}
+              className="mt-0.5 rounded border-gray-300"
+            />
+            <span className="text-xs text-text-secondary">
+              I agree to the{" "}
+              <a href="#" className="font-bold text-text-primary hover:underline">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="#" className="font-bold text-text-primary hover:underline">
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </label>
 
           <button
             type="submit"
             suppressHydrationWarning
-            className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md transition-all cursor-pointer ${themeConfig.primaryColor}`}
+            disabled={isLoading || !agreedTerms}
+            className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed ${themeConfig.primaryColor}`}
           >
-            Create Account
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Creating Account...
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" /> Create Account
+              </>
+            )}
           </button>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-gray-400 font-medium">or sign up with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={handleRegister}
-              className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <span className="font-extrabold text-blue-600">G</span> Continue with Google
-            </button>
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={handleRegister}
-              className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <Phone className="w-3.5 h-3.5 text-gray-500" /> Continue with OTP
-            </button>
-          </div>
         </form>
       </Card>
 
-      {/* Feature Badges */}
+      {/* Info Cards */}
       <Card className="p-5 bg-white border border-border shadow-sm max-w-2xl mx-auto rounded-2xl">
         {activeTab === "customer" && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Secure & Private</span>
-              <span className="text-[10px] text-text-secondary">Your data is safe with us</span>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700"><ShieldCheck className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Secure Sign Up</span>
+              <span className="text-[10px] text-text-secondary">Your info is safe with us</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
-                <BadgeCheck className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Verified Workers</span>
-              <span className="text-[10px] text-text-secondary">Trusted & professional</span>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700"><Calendar className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Flexible Booking</span>
+              <span className="text-[10px] text-text-secondary">Choose your schedule</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Easy Booking</span>
-              <span className="text-[10px] text-text-secondary">Quick & hassle-free</span>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700"><Sparkles className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Vetted Workers</span>
+              <span className="text-[10px] text-text-secondary">Trained &amp; background checked</span>
+            </div>
+            <div className="flex flex-col items-center space-y-1">
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700"><Headphones className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">24/7 Support</span>
+              <span className="text-[10px] text-text-secondary">Always here to help</span>
             </div>
           </div>
         )}
-
         {activeTab === "coordinator" && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Sliders className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Total Control</span>
-              <span className="text-[10px] text-text-secondary">Manage all requests and workers</span>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Sliders className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Full Dashboard</span>
+              <span className="text-[10px] text-text-secondary">Manage everything in one place</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Smart Assignment</span>
-              <span className="text-[10px] text-text-secondary">Find the right worker for the job</span>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Bell className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Live Updates</span>
+              <span className="text-[10px] text-text-secondary">Real-time request alerts</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Bell className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Real-time Updates</span>
-              <span className="text-[10px] text-text-secondary">Track every request in real time</span>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Sparkles className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Smart Matching</span>
+              <span className="text-[10px] text-text-secondary">AI-powered worker ranking</span>
+            </div>
+            <div className="flex flex-col items-center space-y-1">
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><TrendingUp className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Analytics</span>
+              <span className="text-[10px] text-text-secondary">Track cooperative performance</span>
             </div>
           </div>
         )}
-
         {activeTab === "worker" && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <Briefcase className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Find Jobs Easily</span>
-              <span className="text-[10px] text-text-secondary">Get relevant jobs near you</span>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Briefcase className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Steady Work</span>
+              <span className="text-[10px] text-text-secondary">Consistent job assignments</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Grow Your Business</span>
-              <span className="text-[10px] text-text-secondary">Build reputation & earn more</span>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><TrendingUp className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Grow Income</span>
+              <span className="text-[10px] text-text-secondary">More jobs = more earnings</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <Headphones className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Support & Safety</span>
-              <span className="text-[10px] text-text-secondary">We're here to support you</span>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Wrench className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Skill Match</span>
+              <span className="text-[10px] text-text-secondary">Jobs matched to your skills</span>
+            </div>
+            <div className="flex flex-col items-center space-y-1">
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Headphones className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Support</span>
+              <span className="text-[10px] text-text-secondary">We&apos;re always with you</span>
             </div>
           </div>
         )}
@@ -541,7 +497,7 @@ function RegisterContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-sm font-bold text-gray-500">Loading Sign Up...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-sm font-bold text-gray-500">Loading...</div>}>
       <RegisterContent />
     </Suspense>
   );

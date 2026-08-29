@@ -3,17 +3,38 @@
 import React, { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppStore } from "@/lib/store/use-app-store";
+import { supabase } from "@/lib/supabase/client";
+import { getCurrentProfile } from "@/lib/supabase/auth";
 
 function DataInitializer({ children }: { children: React.ReactNode }) {
-  const { initSupabaseData } = useAppStore();
-  const [ready, setReady] = useState(false);
+  const { initSupabaseData, setCurrentUser, clearCurrentUser } = useAppStore();
 
   useEffect(() => {
-    // Fetch live data from Supabase on every app load so all portals (consumer, admin, worker) share the same dataset
-    initSupabaseData().finally(() => setReady(true));
-  }, [initSupabaseData]);
+    // 1. Restore session on every page load
+    getCurrentProfile().then((profile) => {
+      if (profile) {
+        setCurrentUser(profile);
+      }
+    });
 
-  // Show children immediately — data will hydrate in the background
+    // 2. Listen to Supabase auth state changes (login/logout)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const profile = await getCurrentProfile();
+        if (profile) setCurrentUser(profile);
+      } else if (event === "SIGNED_OUT") {
+        clearCurrentUser();
+      }
+    });
+
+    // 3. Fetch live Supabase data on app start
+    initSupabaseData();
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return <>{children}</>;
 }
 

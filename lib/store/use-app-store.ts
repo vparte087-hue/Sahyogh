@@ -23,14 +23,26 @@ import {
   deleteSupabaseWorker,
 } from "../supabase/db-init";
 
+// ─── Logged-in user profile ─────────────────────────────────────────────────
+export interface CurrentUser {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  role: "consumer" | "coordinator" | "worker";
+}
+
 interface AppState {
   // Session & Active Role
   activeRole: UserRole;
   isLoggedIn: boolean;
   loggedRole: UserRole | null;
+  currentUser: CurrentUser | null;
 
   setActiveRole: (role: UserRole) => void;
   loginAsRole: (role: UserRole) => void;
+  setCurrentUser: (user: CurrentUser) => void;
+  clearCurrentUser: () => void;
   logout: () => void;
 
   // Domain Collections
@@ -75,6 +87,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeRole: "MEMBER",
   isLoggedIn: false,
   loggedRole: null,
+  currentUser: null,
 
   setActiveRole: (role) => set({ activeRole: role }),
 
@@ -85,11 +98,38 @@ export const useAppStore = create<AppState>((set, get) => ({
       loggedRole: role,
     }),
 
+  setCurrentUser: (user) =>
+    set({
+      currentUser: user,
+      isLoggedIn: true,
+      loggedRole:
+        user.role === "coordinator"
+          ? "COOPERATIVE_ADMIN"
+          : user.role === "worker"
+          ? "WORKER"
+          : "MEMBER",
+      activeRole:
+        user.role === "coordinator"
+          ? "COOPERATIVE_ADMIN"
+          : user.role === "worker"
+          ? "WORKER"
+          : "MEMBER",
+    }),
+
+  clearCurrentUser: () =>
+    set({
+      currentUser: null,
+      isLoggedIn: false,
+      loggedRole: null,
+      activeRole: "MEMBER",
+    }),
+
   logout: () =>
     set({
       activeRole: "MEMBER",
       isLoggedIn: false,
       loggedRole: null,
+      currentUser: null,
     }),
 
   categories: INITIAL_CATEGORIES,
@@ -131,13 +171,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     const basePrice =
       get().categories.find((c) => c.id === reqData.categoryId)?.basePrice || 350;
 
+    // Use logged-in user's real name & phone — fall back to defaults for demo
+    const cu = get().currentUser;
+    const consumerName = cu?.fullName || "Consumer";
+    const consumerPhone = cu?.phone || "";
+
     const newRequest: ServiceRequest = {
       ...reqData,
       id: newId,
       status: "REQUESTED",
       createdAt: new Date().toISOString(),
-      consumerName: "Rahul Sharma",
-      consumerPhone: "+91 98199 88776",
+      consumerName,
+      consumerPhone,
       amount: {
         base: basePrice,
         fee: 50,

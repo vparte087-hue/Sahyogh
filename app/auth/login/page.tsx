@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
+import { signInUser } from "@/lib/supabase/auth";
 import { Card } from "@/components/ui/card";
 import {
   User,
@@ -12,7 +13,6 @@ import {
   Phone,
   Mail,
   Lock,
-  Building2,
   BadgeCheck,
   ShieldCheck,
   DollarSign,
@@ -26,6 +26,8 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 function LoginContent() {
@@ -38,33 +40,57 @@ function LoginContent() {
   );
 
   const [showPassword, setShowPassword] = useState(false);
-  const [mobileOrEmail, setMobileOrEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [cooperativeId, setCooperativeId] = useState("");
-  const [workerId, setWorkerId] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { loginAsRole } = useAppStore();
+  const { setCurrentUser } = useAppStore();
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
     if (roleParam === "coordinator") setActiveTab("coordinator");
     else if (roleParam === "worker") setActiveTab("worker");
     else if (roleParam === "customer") setActiveTab("customer");
+    setErrorMsg(null);
   }, [searchParams]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
+    setIsLoading(true);
 
-    if (activeTab === "customer") {
-      loginAsRole("MEMBER");
-      router.push("/consumer/dashboard");
-    } else if (activeTab === "coordinator") {
-      loginAsRole("COOPERATIVE_ADMIN");
+    const { user, error } = await signInUser(email, password);
+
+    setIsLoading(false);
+
+    if (error || !user) {
+      setErrorMsg(error || "Login failed. Please try again.");
+      return;
+    }
+
+    // Validate role matches selected tab
+    const expectedRole =
+      activeTab === "coordinator" ? "coordinator" : activeTab === "worker" ? "worker" : "consumer";
+
+    if (user.role !== expectedRole) {
+      setErrorMsg(
+        `This account is registered as a ${user.role}. Please select the correct tab.`
+      );
+      return;
+    }
+
+    // Store user in Zustand — providers.tsx will keep it in sync
+    setCurrentUser(user);
+
+    // Redirect based on role
+    if (user.role === "coordinator") {
       router.push("/admin/dashboard");
-    } else if (activeTab === "worker") {
-      loginAsRole("WORKER");
+    } else if (user.role === "worker") {
       router.push("/worker/jobs");
+    } else {
+      router.push("/consumer/dashboard");
     }
   };
 
@@ -111,7 +137,7 @@ function LoginContent() {
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("customer")}
+          onClick={() => { setActiveTab("customer"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "customer"
               ? "bg-white text-emerald-800 shadow"
@@ -124,7 +150,7 @@ function LoginContent() {
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("coordinator")}
+          onClick={() => { setActiveTab("coordinator"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "coordinator"
               ? "bg-white text-purple-800 shadow"
@@ -137,7 +163,7 @@ function LoginContent() {
         <button
           type="button"
           suppressHydrationWarning
-          onClick={() => setActiveTab("worker")}
+          onClick={() => { setActiveTab("worker"); setErrorMsg(null); }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "worker"
               ? "bg-white text-amber-800 shadow"
@@ -179,30 +205,36 @@ function LoginContent() {
             {themeConfig.formTitle}
           </div>
 
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <span className="text-xs font-medium text-red-700">{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Email Field */}
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1.5">
-              {activeTab === "coordinator" ? "Email or Mobile Number *" : "Mobile Number *"}
+              Email Address *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                {activeTab === "coordinator" ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                <Mail className="w-4 h-4" />
               </div>
               <input
-                type="text"
+                type="email"
                 required
                 suppressHydrationWarning
-                value={mobileOrEmail}
-                onChange={(e) => setMobileOrEmail(e.target.value)}
-                placeholder={
-                  activeTab === "coordinator"
-                    ? "Enter your email or mobile number"
-                    : "Enter your 10-digit mobile number"
-                }
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
                 className={`w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
               />
             </div>
           </div>
 
+          {/* Password Field */}
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1.5">
               Password *
@@ -231,50 +263,6 @@ function LoginContent() {
             </div>
           </div>
 
-          {activeTab === "coordinator" && (
-            <div>
-              <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1.5">
-                Cooperative ID *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  suppressHydrationWarning
-                  value={cooperativeId}
-                  onChange={(e) => setCooperativeId(e.target.value)}
-                  placeholder="Enter your Cooperative ID (e.g. COOP-THN-04)"
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === "worker" && (
-            <div>
-              <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1.5">
-                Worker ID *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <BadgeCheck className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  suppressHydrationWarning
-                  value={workerId}
-                  onChange={(e) => setWorkerId(e.target.value)}
-                  placeholder="Enter your Worker ID (e.g. W-042)"
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing}`}
-                />
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-between text-xs pt-1">
             <label className="flex items-center gap-2 font-medium text-text-secondary cursor-pointer">
               <input
@@ -282,11 +270,10 @@ function LoginContent() {
                 suppressHydrationWarning
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="rounded border-gray-300"
               />
               Remember me
             </label>
-
             <a href="#" className="font-bold text-text-primary hover:underline">
               Forgot Password?
             </a>
@@ -295,41 +282,22 @@ function LoginContent() {
           <button
             type="submit"
             suppressHydrationWarning
-            className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer ${themeConfig.primaryColor}`}
+            disabled={isLoading}
+            className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed ${themeConfig.primaryColor}`}
           >
-            Login <ArrowRight className="w-4 h-4" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Logging in...
+              </>
+            ) : (
+              <>
+                Login <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-gray-400 font-medium">or continue with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={handleLogin}
-              className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <span className="font-extrabold text-blue-600">G</span> Continue with Google
-            </button>
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={handleLogin}
-              className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <Phone className="w-3.5 h-3.5 text-gray-500" /> Continue with OTP
-            </button>
-          </div>
-
           <div className="text-center text-xs font-medium text-text-secondary pt-2">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href={`/auth/register?role=${activeTab}`}
               className="font-extrabold text-text-primary hover:underline"
@@ -349,13 +317,13 @@ function LoginContent() {
                 <BadgeCheck className="w-4 h-4" />
               </div>
               <span className="font-bold text-xs text-text-primary">Verified Workers</span>
-              <span className="text-[10px] text-text-secondary">Trusted & professional</span>
+              <span className="text-[10px] text-text-secondary">Trusted &amp; professional</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
                 <ShieldCheck className="w-4 h-4" />
               </div>
-              <span className="font-bold text-xs text-text-primary">Safe & Secure</span>
+              <span className="font-bold text-xs text-text-primary">Safe &amp; Secure</span>
               <span className="text-[10px] text-text-secondary">Your data is 100% protected</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
@@ -363,14 +331,14 @@ function LoginContent() {
                 <DollarSign className="w-4 h-4" />
               </div>
               <span className="font-bold text-xs text-text-primary">Fair Pricing</span>
-              <span className="text-[10px] text-text-secondary">Transparent & affordable</span>
+              <span className="text-[10px] text-text-secondary">Transparent &amp; affordable</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
               <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
                 <Headphones className="w-4 h-4" />
               </div>
               <span className="font-bold text-xs text-text-primary">Quick Support</span>
-              <span className="text-[10px] text-text-secondary">We're here to help you</span>
+              <span className="text-[10px] text-text-secondary">We&apos;re here to help you</span>
             </div>
           </div>
         )}
@@ -378,31 +346,23 @@ function LoginContent() {
         {activeTab === "coordinator" && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Sliders className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Sliders className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Total Control</span>
-              <span className="text-[10px] text-text-secondary">Manage requests & workers</span>
+              <span className="text-[10px] text-text-secondary">Manage requests &amp; workers</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Sparkles className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Sparkles className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Smart Assignment</span>
               <span className="text-[10px] text-text-secondary">Find the best worker</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <Bell className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><Bell className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Real-time Updates</span>
               <span className="text-[10px] text-text-secondary">Track jobs in real time</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-700">
-                <BarChart3 className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-xs text-text-primary">Reports & Insights</span>
+              <div className="p-2 rounded-xl bg-purple-50 text-purple-700"><BarChart3 className="w-4 h-4" /></div>
+              <span className="font-bold text-xs text-text-primary">Reports &amp; Insights</span>
               <span className="text-[10px] text-text-secondary">Get performance metrics</span>
             </div>
           </div>
@@ -411,32 +371,24 @@ function LoginContent() {
         {activeTab === "worker" && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <Briefcase className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Briefcase className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Assigned Jobs</span>
               <span className="text-[10px] text-text-secondary">View jobs assigned to you</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <Edit className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Edit className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Easy Updates</span>
               <span className="text-[10px] text-text-secondary">Update job status in 1 tap</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <DollarSign className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><DollarSign className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Earnings</span>
               <span className="text-[10px] text-text-secondary">Track your earnings clearly</span>
             </div>
             <div className="flex flex-col items-center space-y-1">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-800">
-                <Headphones className="w-4 h-4" />
-              </div>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-800"><Headphones className="w-4 h-4" /></div>
               <span className="font-bold text-xs text-text-primary">Support</span>
-              <span className="text-[10px] text-text-secondary">We're here to assist you</span>
+              <span className="text-[10px] text-text-secondary">We&apos;re here to assist you</span>
             </div>
           </div>
         )}
