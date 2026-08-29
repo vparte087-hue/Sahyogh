@@ -94,17 +94,18 @@ export default function LandingPage() {
               Sahyog connects you with verified local workers through cooperative societies. Reliable service. Fair earnings. Built on trust and transparency.
             </p>
 
-            {/* CTAs */}
+            {/* CTAs with valid HTML element structure */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link href="/auth/register?role=customer">
-                <button className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-sm shadow-lg transition-all flex items-center gap-2 cursor-pointer">
-                  Get Started <ArrowRight className="w-4 h-4" />
-                </button>
+              <Link
+                href="/auth/register?role=customer"
+                className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-sm shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer"
+              >
+                Get Started <ArrowRight className="w-4 h-4" />
               </Link>
 
               <a
                 href="#about"
-                className="px-6 py-3.5 rounded-xl border border-border bg-white text-text-primary hover:bg-gray-50 active:scale-95 font-bold text-sm transition-colors cursor-pointer"
+                className="px-6 py-3.5 rounded-xl border border-border bg-white text-text-primary hover:bg-gray-50 active:scale-95 font-bold text-sm transition-colors cursor-pointer inline-flex items-center"
               >
                 Learn More
               </a>
