@@ -3,9 +3,12 @@
 import React, { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Phone, CheckCircle2, Circle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Timeline } from "@/components/timeline";
+import { ArrowLeft, Phone, MapPin, Calendar, Clock, Activity, User, Wrench } from "lucide-react";
 
 export default function AdminJobTrackingPage({
   params,
@@ -14,8 +17,22 @@ export default function AdminJobTrackingPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const { requests, workers } = useAppStore();
 
   const jobId = resolvedParams.id;
+  const request = requests.find((r) => r.id === jobId) || requests[0];
+  const assignedWorker = workers.find((w) => w.id === request?.assignedWorkerId);
+
+  if (!request) {
+    return (
+      <div className="p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold text-text-primary">Job Request Not Found</h2>
+        <Button variant="outline" onClick={() => router.push("/admin/jobs")}>
+          Return to Jobs List
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -25,30 +42,45 @@ export default function AdminJobTrackingPage({
           href="/admin/jobs"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-primary transition-colors mb-2"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Jobs
+          <ArrowLeft className="w-4 h-4" /> Back to Jobs Console
         </Link>
-        <span className="text-xs font-mono text-text-secondary uppercase tracking-widest block">
-          JOBS / #{jobId}
-        </span>
-        <h1 className="text-2xl font-extrabold text-text-primary mt-1">Job Tracking</h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-mono text-text-secondary uppercase tracking-widest block">
+              REAL-TIME JOB TRACKING / #{request.id}
+            </span>
+            <h1 className="text-2xl font-extrabold text-text-primary mt-1">{request.title}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200">
+              <Activity className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Live Tracking
+            </div>
+            <Badge status={request.status} />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Main Job Details Card */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6 sm:p-8 space-y-6">
+          <Card className="p-6 sm:p-8 space-y-6 bg-white">
             <div className="flex items-center justify-between border-b border-border pb-4">
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                ● PLUMBING
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-secondary border border-blue-200 uppercase">
+                ● {request.categoryName}
               </span>
               <span className="text-xs font-mono font-bold text-gray-400">
-                #{jobId}
+                ID: {request.id}
               </span>
             </div>
 
-            <h2 className="text-2xl font-extrabold text-text-primary">
-              Pipe leakage repair
-            </h2>
+            <div>
+              <h2 className="text-2xl font-extrabold text-text-primary">
+                {request.title}
+              </h2>
+              <p className="text-xs text-text-secondary mt-1.5 leading-relaxed bg-gray-50 p-3 rounded-lg border border-border">
+                "{request.problemDescription}"
+              </p>
+            </div>
 
             <div className="space-y-3 text-xs border-t border-b border-gray-100 py-4 font-semibold">
               <div className="grid grid-cols-3 py-1">
@@ -56,119 +88,93 @@ export default function AdminJobTrackingPage({
                   CUSTOMER
                 </span>
                 <span className="col-span-2 font-bold text-text-primary">
-                  Rahul Sharma
+                  {request.consumerName} ({request.consumerPhone || "No Phone"})
                 </span>
               </div>
 
               <div className="grid grid-cols-3 py-1">
                 <span className="font-mono text-gray-400 uppercase text-[10px]">
-                  SERVICE
+                  SERVICE CATEGORY
                 </span>
                 <span className="col-span-2 font-bold text-text-primary">
-                  Plumbing
+                  {request.categoryName}
                 </span>
               </div>
 
               <div className="grid grid-cols-3 py-1">
                 <span className="font-mono text-gray-400 uppercase text-[10px]">
-                  WORKER
+                  ASSIGNED WORKER
                 </span>
                 <span className="col-span-2 font-bold text-text-primary">
-                  Suresh Kumar
+                  {assignedWorker ? `${assignedWorker.name} (${assignedWorker.workerCode})` : "Unassigned"}
                 </span>
               </div>
 
               <div className="grid grid-cols-3 py-1">
                 <span className="font-mono text-gray-400 uppercase text-[10px]">
-                  LOCATION
+                  SERVICE LOCATION
                 </span>
                 <span className="col-span-2 font-bold text-text-primary">
-                  Thane, Maharashtra
+                  {request.address.houseNo}, {request.address.locality}, {request.address.city} - {request.address.pinCode}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 py-1">
+                <span className="font-mono text-gray-400 uppercase text-[10px]">
+                  PREFERRED SCHEDULE
+                </span>
+                <span className="col-span-2 font-bold text-text-primary">
+                  {request.preferredDate} ({request.preferredTimeSlot})
                 </span>
               </div>
             </div>
 
-            {/* WORKER NOTES */}
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-bold text-gray-500 uppercase block">
-                WORKER NOTES
-              </span>
-              <p className="p-4 bg-amber-50/50 border border-amber-200/60 rounded-xl text-sm text-text-primary leading-relaxed">
-                "Pipe joint replacement required. Picking up the part now, back within 20 minutes."
-              </p>
-            </div>
+            {/* WORKER NOTES & EVIDENCE */}
+            {request.completionNotes && (
+              <div className="space-y-2">
+                <span className="text-xs font-mono font-bold text-gray-500 uppercase block">
+                  WORKER COMPLETION REPORT & NOTES
+                </span>
+                <p className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl text-sm text-text-primary leading-relaxed">
+                  "{request.completionNotes}"
+                </p>
 
-            <Button variant="accent" size="lg" fullWidth className="shadow-md py-3.5">
-              <Phone className="w-4 h-4 ml-2" /> Contact Worker
-            </Button>
+                {request.evidencePhotos && request.evidencePhotos.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-xs font-bold text-text-secondary block mb-1">
+                      Photo Evidence Attached:
+                    </span>
+                    <div className="flex gap-2">
+                      {request.evidencePhotos.map((photo, i) => (
+                        <div key={i} className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5">
+                          ✓ Photo Evidence #{i + 1}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {assignedWorker && (
+              <a href={`tel:${assignedWorker.phone}`} className="block">
+                <Button variant="accent" size="lg" fullWidth className="shadow-md py-3.5">
+                  <Phone className="w-4 h-4 ml-2" /> Contact Worker ({assignedWorker.phone})
+                </Button>
+              </a>
+            )}
           </Card>
         </div>
 
-        {/* Right 1 Col: Job Status Timeline */}
+        {/* Right 1 Col: Dynamic Job Status Timeline */}
         <div className="space-y-6">
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 bg-white">
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-bold text-text-primary text-sm">Job status</h3>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                ● In progress
-              </span>
+              <h3 className="font-bold text-text-primary text-sm">Live Job Timeline</h3>
+              <Badge status={request.status} />
             </div>
 
-            <div className="space-y-5 relative pl-5 border-l-2 border-border pt-1">
-              {/* Step 1 */}
-              <div className="relative">
-                <CheckCircle2 className="w-4 h-4 text-success absolute -left-[25px] top-0 bg-white" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-text-primary">Request received</span>
-                  <span className="font-mono text-gray-400 text-[11px]">9:41 AM</span>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="relative">
-                <CheckCircle2 className="w-4 h-4 text-success absolute -left-[25px] top-0 bg-white" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-text-primary">Worker assigned</span>
-                  <span className="font-mono text-gray-400 text-[11px]">9:52 AM</span>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="relative">
-                <CheckCircle2 className="w-4 h-4 text-success absolute -left-[25px] top-0 bg-white" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-text-primary">Worker accepted</span>
-                  <span className="font-mono text-gray-400 text-[11px]">9:55 AM</span>
-                </div>
-              </div>
-
-              {/* Step 4 */}
-              <div className="relative">
-                <CheckCircle2 className="w-4 h-4 text-success absolute -left-[25px] top-0 bg-white" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-text-primary">Worker arrived</span>
-                  <span className="font-mono text-gray-400 text-[11px]">10:02 AM</span>
-                </div>
-              </div>
-
-              {/* Step 5 */}
-              <div className="relative">
-                <Circle className="w-4 h-4 text-accent absolute -left-[25px] top-0 bg-white fill-amber-100" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-amber-800">Work in progress</span>
-                  <span className="font-mono text-amber-700 text-[11px]">Now</span>
-                </div>
-              </div>
-
-              {/* Step 6 */}
-              <div className="relative">
-                <Circle className="w-4 h-4 text-gray-300 absolute -left-[25px] top-0 bg-white" />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-gray-400">Completed</span>
-                  <span className="font-mono text-gray-400 text-[11px]">Pending</span>
-                </div>
-              </div>
-            </div>
+            <Timeline currentStatus={request.status} timeline={request.timeline || []} />
           </Card>
         </div>
       </div>

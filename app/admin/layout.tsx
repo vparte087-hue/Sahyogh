@@ -70,20 +70,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Footer Admin Profile */}
         <div className="pt-6 border-t border-white/10 space-y-4">
-          <button className="flex items-center gap-2 text-xs font-semibold text-gray-300 hover:text-white transition-colors">
-            <Settings className="w-4 h-4" /> Cooperative Settings
-          </button>
-
-          <Link href="/admin/profile" className="flex items-center gap-3 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all cursor-pointer">
-            <div className="w-9 h-9 rounded-lg bg-accent text-white font-black text-xs flex items-center justify-center shadow">
-              AD
-            </div>
-            <div>
-              <span className="font-bold text-xs block text-white">Anita Deshmukh</span>
-              <span className="text-[10px] text-gray-300 tracking-wider font-mono uppercase block">
-                COORDINATOR PROFILE
-              </span>
-            </div>
+          <Link href="/admin/profile" className="flex items-center gap-2 text-xs font-semibold text-gray-300 hover:text-white transition-colors">
+            <Settings className="w-4 h-4" /> Cooperative Settings &amp; Profile
           </Link>
         </div>
       </aside>

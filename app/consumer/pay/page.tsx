@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
@@ -17,20 +17,13 @@ import {
   Check,
 } from "lucide-react";
 
-export default function ConsumerPaymentPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedParams = use(params);
+export default function ConsumerPaymentQueuePage() {
   const router = useRouter();
   const { requests, workers, processPayment } = useAppStore();
 
-  const initialId = resolvedParams.id;
   const pendingRequests = requests.filter((r) => r.status !== "PAID" && r.status !== "REJECTED");
-
   const [selectedRequestId, setSelectedRequestId] = useState<string>(
-    requests.some((r) => r.id === initialId) ? initialId : pendingRequests[0]?.id || requests[0]?.id || ""
+    pendingRequests[0]?.id || requests[0]?.id || ""
   );
 
   const activeRequest = requests.find((r) => r.id === selectedRequestId) || requests[0];
@@ -60,9 +53,9 @@ export default function ConsumerPaymentPage({
   if (!activeRequest) {
     return (
       <div className="p-12 text-center space-y-4 max-w-lg mx-auto">
-        <h2 className="text-2xl font-bold text-text-primary">No Payment Pending</h2>
+        <h2 className="text-2xl font-bold text-text-primary">No Payments Pending</h2>
         <p className="text-xs text-text-secondary">
-          Request ID #{initialId} was not found or has no pending payments.
+          All your service requests have been paid or completed.
         </p>
         <Button variant="accent" onClick={() => router.push("/consumer/dashboard")}>
           Return to Dashboard
@@ -86,7 +79,7 @@ export default function ConsumerPaymentPage({
             <span className="block text-xs font-mono text-text-secondary uppercase tracking-widest">
               PAYMENT &amp; BILLING QUEUE
             </span>
-            <h1 className="text-2xl font-extrabold text-text-primary mt-1">Payment Console</h1>
+            <h1 className="text-2xl font-extrabold text-text-primary mt-1">Payment Queue Console</h1>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 text-secondary rounded-full text-xs font-bold">
             <Layers className="w-3.5 h-3.5 text-secondary" />

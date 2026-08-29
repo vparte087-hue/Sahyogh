@@ -67,6 +67,9 @@ export interface WorkerProfile {
   skills: string[];
   serviceAreas: string[];
   avatarUrl?: string;
+  totalEarnings?: number;
+  monthlyEarnings?: number;
+  pendingPayout?: number;
 }
 
 export interface ServiceAddress {
@@ -105,6 +108,7 @@ export interface ServiceRequest {
   photos?: string[];
   evidencePhotos?: string[];
   urgent?: boolean;
+  urgency?: "NORMAL" | "HIGH" | "EMERGENCY";
   status: RequestStatus;
   assignedWorkerId?: string;
   assignedWorkerName?: string;

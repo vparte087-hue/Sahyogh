@@ -19,8 +19,23 @@ export default function ConsumerTrackPage({
   const router = useRouter();
   const { requests, workers } = useAppStore();
 
-  const request = requests.find((r) => r.id === resolvedParams.id) || requests[0];
-  const assignedWorker = workers.find((w) => w.id === request.assignedWorkerId);
+  const initialId = resolvedParams.id;
+  const request = requests.find((r) => r.id === initialId) || requests[0];
+  const assignedWorker = workers.find((w) => w.id === request?.assignedWorkerId);
+
+  if (!request) {
+    return (
+      <div className="p-12 text-center space-y-4 max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold text-text-primary">Service Request Not Found</h2>
+        <p className="text-xs text-text-secondary">
+          Request ID #{initialId} was not found or has been removed.
+        </p>
+        <Button variant="accent" onClick={() => router.push("/consumer/dashboard")}>
+          Return to Consumer Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -112,7 +127,7 @@ export default function ConsumerTrackPage({
             </Card>
           ) : (
             <Card className="p-6 text-center space-y-2 bg-amber-50/50 border-amber-200">
-              <h4 className="font-bold text-amber-900 text-sm">Review & Assignment Pending</h4>
+              <h4 className="font-bold text-amber-900 text-sm">Review &amp; Assignment Pending</h4>
               <p className="text-xs text-amber-800">
                 A Cooperative Society Administrator is currently reviewing your request and matching an available worker.
               </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
@@ -8,20 +8,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, ArrowLeft, CheckCircle, Layers, User, Check, Sparkles } from "lucide-react";
 
-export default function RatePage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
+export default function ConsumerRateQueuePage() {
   const router = useRouter();
   const { requests, workers, submitRating } = useAppStore();
 
-  const initialId = resolvedParams.id;
-
-  // Filter completed or paid jobs eligible for rating
   const completedJobs = requests.filter(
     (r) => r.status === "COMPLETED" || r.status === "PAID" || r.rating?.stars
   );
 
   const [selectedRequestId, setSelectedRequestId] = useState<string>(
-    requests.some((r) => r.id === initialId) ? initialId : completedJobs[0]?.id || requests[0]?.id
+    completedJobs[0]?.id || requests[0]?.id || ""
   );
 
   const activeRequest = requests.find((r) => r.id === selectedRequestId) || requests[0];
@@ -65,6 +61,20 @@ export default function RatePage({ params }: { params: Promise<{ id: string }> }
 
   const pendingRatingsCount = completedJobs.filter((r) => !r.rating?.stars).length;
 
+  if (!activeRequest) {
+    return (
+      <div className="p-12 text-center space-y-4 max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold text-text-primary">No Completed Jobs to Rate</h2>
+        <p className="text-xs text-text-secondary">
+          Once a service request is completed by a worker, you can rate their performance here.
+        </p>
+        <Button variant="accent" onClick={() => router.push("/consumer/dashboard")}>
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -102,96 +112,90 @@ export default function RatePage({ params }: { params: Promise<{ id: string }> }
           </div>
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-            {completedJobs.length === 0 ? (
-              <div className="p-4 bg-gray-50 rounded-xl text-center text-xs text-text-secondary">
-                No completed jobs available for rating yet.
-              </div>
-            ) : (
-              completedJobs.map((req) => {
-                const isSelected = req.id === selectedRequestId;
-                const isRated = !!req.rating?.stars;
-                const worker = workers.find((w) => w.id === req.assignedWorkerId);
-                const workerName = req.assignedWorkerName || worker?.name || "Assigned Worker";
+            {completedJobs.map((req) => {
+              const isSelected = req.id === selectedRequestId;
+              const isRated = !!req.rating?.stars;
+              const worker = workers.find((w) => w.id === req.assignedWorkerId);
+              const workerName = req.assignedWorkerName || worker?.name || "Assigned Worker";
 
-                return (
-                  <div
-                    key={req.id}
-                    onClick={() => handleSelectJob(req.id)}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer bg-white relative ${
-                      isSelected
-                        ? "border-2 border-accent shadow-md bg-amber-50/20 ring-2 ring-accent/20"
-                        : "border-border hover:border-gray-300 hover:shadow-sm"
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-white rounded-full text-[10px] font-bold">
-                        Selected
-                      </div>
-                    )}
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm">
-                        {workerName.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[11px] font-mono font-bold text-gray-500 block">
-                          {req.id}
-                        </span>
-                        <h4 className="font-bold text-text-primary text-sm truncate">
-                          {workerName}
-                        </h4>
-                        <span className="text-xs text-text-secondary block truncate">
-                          {req.categoryName} — {req.title}
-                        </span>
-                      </div>
+              return (
+                <div
+                  key={req.id}
+                  onClick={() => handleSelectJob(req.id)}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer bg-white relative ${
+                    isSelected
+                      ? "border-2 border-accent shadow-md bg-amber-50/20 ring-2 ring-accent/20"
+                      : "border-border hover:border-gray-300 hover:shadow-sm"
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-accent text-white rounded-full text-[10px] font-bold">
+                      Selected
                     </div>
+                  )}
 
-                    <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100 text-xs">
-                      <span className="text-gray-400 font-mono text-[11px]">
-                        {req.preferredDate}
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                      {workerName.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-mono font-bold text-gray-500 block">
+                        {req.id}
                       </span>
-
-                      {isRated ? (
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px] flex items-center gap-1">
-                          ★ Rated {req.rating?.stars}.0
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full font-bold text-[10px] animate-pulse">
-                          ● Pending Rating
-                        </span>
-                      )}
+                      <h4 className="font-bold text-text-primary text-sm truncate">
+                        {workerName}
+                      </h4>
+                      <span className="text-xs text-text-secondary block truncate">
+                        {req.categoryName} — {req.title}
+                      </span>
                     </div>
                   </div>
-                );
-              })
-            )}
+
+                  <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100 text-xs">
+                    <span className="text-gray-400 font-mono text-[11px]">
+                      {req.preferredDate}
+                    </span>
+
+                    {isRated ? (
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px] flex items-center gap-1">
+                        ★ Rated {req.rating?.stars}.0
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded-full font-bold text-[10px] animate-pulse">
+                        ● Pending Rating
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Right 2 Columns: Rating Console for Selected Item */}
         <div className="lg:col-span-2 space-y-6">
           <h3 className="text-xs font-extrabold tracking-wider text-text-secondary uppercase">
-            2. EVALUATE WORKER PERFORMANCE FOR #{activeRequest?.id}
+            2. EVALUATE WORKER PERFORMANCE FOR #{activeRequest.id}
           </h3>
 
-          {justSubmittedId === activeRequest?.id || activeRequest?.rating?.stars ? (
+          {justSubmittedId === activeRequest.id || activeRequest.rating?.stars ? (
             <Card className="p-8 text-center space-y-4 border-success bg-emerald-50/50">
               <div className="w-16 h-16 rounded-full bg-success text-white flex items-center justify-center mx-auto shadow-md">
                 <CheckCircle className="w-10 h-10" />
               </div>
               <h2 className="text-2xl font-bold text-text-primary">Rating Submitted Successfully!</h2>
               <p className="text-xs text-text-secondary max-w-md mx-auto">
-                Thank you for submitting a <strong>{activeRequest?.rating?.stars || stars} ★ rating</strong> for{" "}
-                <strong>{activeRequest?.assignedWorkerName || assignedWorker?.name || "Assigned Worker"}</strong>. Your feedback maintains quality across Labour Cooperative Societies.
+                Thank you for submitting a <strong>{activeRequest.rating?.stars || stars} ★ rating</strong> for{" "}
+                <strong>{activeRequest.assignedWorkerName || assignedWorker?.name || "Assigned Worker"}</strong>. Your feedback maintains quality across Labour Cooperative Societies.
               </p>
 
               <div className="pt-4 flex flex-col sm:flex-row justify-center gap-3">
-                {completedJobs.some((r) => r.id !== activeRequest?.id && !r.rating?.stars) && (
+                {completedJobs.some((r) => r.id !== activeRequest.id && !r.rating?.stars) && (
                   <Button
                     variant="accent"
                     size="lg"
                     onClick={() => {
-                      const nextUnrated = completedJobs.find((r) => r.id !== activeRequest?.id && !r.rating?.stars);
+                      const nextUnrated = completedJobs.find((r) => r.id !== activeRequest.id && !r.rating?.stars);
                       if (nextUnrated) {
                         handleSelectJob(nextUnrated.id);
                       }
@@ -210,17 +214,17 @@ export default function RatePage({ params }: { params: Promise<{ id: string }> }
               {/* Worker Profile Summary */}
               <div className="flex items-center gap-4 p-4 bg-amber-50/60 rounded-2xl border border-amber-200">
                 <div className="w-14 h-14 rounded-full bg-accent text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
-                  {activeRequest?.assignedWorkerName ? activeRequest.assignedWorkerName.charAt(0) : "W"}
+                  {activeRequest.assignedWorkerName ? activeRequest.assignedWorkerName.charAt(0) : "W"}
                 </div>
                 <div>
                   <span className="text-[10px] font-mono font-bold text-amber-800 uppercase block">
                     ASSIGNED WORKER
                   </span>
                   <h3 className="font-extrabold text-text-primary text-lg">
-                    {activeRequest?.assignedWorkerName || assignedWorker?.name || "Assigned Worker"}
+                    {activeRequest.assignedWorkerName || assignedWorker?.name || "Assigned Worker"}
                   </h3>
                   <p className="text-xs text-text-secondary mt-0.5">
-                    {activeRequest?.categoryName} · Service Request #{activeRequest?.id}
+                    {activeRequest.categoryName} · Service Request #{activeRequest.id}
                   </p>
                 </div>
               </div>

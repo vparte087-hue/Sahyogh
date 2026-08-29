@@ -7,6 +7,7 @@ import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PhotoDocumentUpload, PhotoDocument } from "@/components/ui/photo-document-upload";
 import {
   ArrowLeft,
   MapPin,
@@ -15,7 +16,6 @@ import {
   Clock,
   Play,
   CheckCircle2,
-  UploadCloud,
 } from "lucide-react";
 
 export default function ActiveJobPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,10 +27,10 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
   const request = requests.find((r) => r.id === reqId) || requests[0];
 
   const [notes, setNotes] = useState(request.completionNotes || "");
-  const [photoAttached, setPhotoAttached] = useState(false);
+  const [photoDoc, setPhotoDoc] = useState<PhotoDocument | null>(null);
 
   const isInProgress = request.status === "IN_PROGRESS";
-  const isFinished = request.status === "COMPLETION_PENDING" || request.status === "PAID";
+  const isFinished = request.status === "COMPLETION_PENDING" || request.status === "PAID" || request.status === "COMPLETED";
 
   const handleStart = () => {
     startJob(request.id);
@@ -38,7 +38,11 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
 
   const handleComplete = () => {
     if (!notes.trim()) return;
-    completeJob(request.id, notes, photoAttached ? ["/sample-after.jpg"] : []);
+    completeJob(
+      request.id,
+      notes,
+      photoDoc ? [photoDoc.fileDataUrl] : request.evidencePhotos || []
+    );
     router.push("/worker/history");
   };
 
@@ -54,7 +58,7 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
         <span className="block text-xs font-bold text-text-secondary uppercase tracking-widest">
           ACTIVE SERVICE EXECUTION
         </span>
-        <h1 className="text-2xl font-bold text-text-primary mt-1">Active Job</h1>
+        <h1 className="text-2xl font-bold text-text-primary mt-1">Active Job Details</h1>
       </div>
 
       {/* Job Detail Card with Full Address & Consumer Phone Revealed */}
@@ -111,7 +115,7 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
       {!isInProgress && !isFinished && (
         <Card className="space-y-3 bg-amber-50/50 border-amber-200">
           <h3 className="text-xs font-bold tracking-widest text-amber-900 uppercase">
-            JOB PROGRESS
+            JOB EXECUTION
           </h3>
           <p className="text-xs text-amber-800">
             Tap below when you have arrived on site and are starting work.
@@ -125,7 +129,7 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
       {/* Completion & Execution Controls */}
       {(isInProgress || isFinished) && (
         <div className="space-y-6">
-          <Card className="space-y-4">
+          <Card className="space-y-4 bg-white">
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider">
               COMPLETION NOTES *
             </label>
@@ -139,23 +143,25 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
               className="w-full px-4 py-2.5 rounded-lg border border-border text-sm focus:ring-2 focus:ring-primary focus:outline-none"
             />
 
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-text-primary uppercase tracking-wider">
-                COMPLETION EVIDENCE / PHOTOS (OPTIONAL)
-              </label>
-
-              <div
-                onClick={() => !isFinished && setPhotoAttached(!photoAttached)}
-                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer ${
-                  photoAttached ? "border-success bg-emerald-50" : "border-gray-300"
-                }`}
-              >
-                <UploadCloud className="w-6 h-6 mx-auto mb-1 text-gray-400" />
-                <span className="text-xs font-semibold text-text-primary block">
-                  {photoAttached ? "Before/After Photo Attached" : "Upload completion photo evidence"}
-                </span>
-              </div>
-            </div>
+            {!isFinished ? (
+              <PhotoDocumentUpload
+                label="COMPLETION EVIDENCE / WORK PHOTO DOCUMENT (OPTIONAL)"
+                documentTypes={[
+                  "Work Completion Photo (After Service)",
+                  "Replaced Spare Part / Invoice Receipt Photo",
+                  "Before / After Comparison Photo",
+                  "Consumer Signed Approval Sheet",
+                ]}
+                value={photoDoc}
+                onChange={setPhotoDoc}
+              />
+            ) : (
+              request.evidencePhotos && request.evidencePhotos.length > 0 && (
+                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold">
+                  ✓ Photo Evidence Attached with Completion Report
+                </div>
+              )
+            )}
 
             {!isFinished ? (
               <Button
@@ -166,11 +172,11 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
                 onClick={handleComplete}
                 className="shadow-md"
               >
-                <CheckCircle2 className="w-5 h-5 ml-2" /> Mark Job as Completed
+                <CheckCircle2 className="w-5 h-5 ml-2" /> Mark Job as Completed →
               </Button>
             ) : (
               <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold text-center">
-                ✓ Job marked complete. Awaiting consumer payment & confirmation.
+                ✓ Job marked complete. Awaiting consumer payment &amp; confirmation.
               </div>
             )}
           </Card>

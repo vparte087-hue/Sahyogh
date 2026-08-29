@@ -10,7 +10,19 @@ function DataInitializer({ children }: { children: React.ReactNode }) {
   const { initSupabaseData, setCurrentUser, clearCurrentUser } = useAppStore();
 
   useEffect(() => {
-    // 1. Restore session on every page load
+    // 1. Restore session from localStorage or Supabase on every page load
+    if (typeof window !== "undefined") {
+      const savedUserStr = localStorage.getItem("sahyog_current_user");
+      if (savedUserStr) {
+        try {
+          const parsed = JSON.parse(savedUserStr);
+          if (parsed && parsed.id) {
+            setCurrentUser(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+
     getCurrentProfile().then((profile) => {
       if (profile) {
         setCurrentUser(profile);
@@ -49,9 +61,15 @@ function DataInitializer({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
+    // 5. Periodic polling fallback every 3 seconds for guaranteed real-time UI monitoring
+    const pollInterval = setInterval(() => {
+      initSupabaseData();
+    }, 3000);
+
     return () => {
       authListener.subscription.unsubscribe();
       supabase.removeChannel(realtimeChannel);
+      clearInterval(pollInterval);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

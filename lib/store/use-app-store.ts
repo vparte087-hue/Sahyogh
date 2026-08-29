@@ -98,7 +98,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       loggedRole: role,
     }),
 
-  setCurrentUser: (user) =>
+  setCurrentUser: (user) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("sahyog_current_user", JSON.stringify(user));
+      } catch (e) {}
+    }
     set({
       currentUser: user,
       isLoggedIn: true,
@@ -114,23 +119,36 @@ export const useAppStore = create<AppState>((set, get) => ({
           : user.role === "worker"
           ? "WORKER"
           : "MEMBER",
-    }),
+    });
+  },
 
-  clearCurrentUser: () =>
+  clearCurrentUser: () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("sahyog_current_user");
+      } catch (e) {}
+    }
     set({
       currentUser: null,
       isLoggedIn: false,
       loggedRole: null,
       activeRole: "MEMBER",
-    }),
+    });
+  },
 
-  logout: () =>
+  logout: () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("sahyog_current_user");
+      } catch (e) {}
+    }
     set({
       activeRole: "MEMBER",
       isLoggedIn: false,
       loggedRole: null,
       currentUser: null,
-    }),
+    });
+  },
 
   categories: INITIAL_CATEGORIES,
   workers: INITIAL_WORKERS,
@@ -405,6 +423,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   processPayment: (requestId, paymentMethod) => {
+    const targetReq = get().requests.find((r) => r.id === requestId);
+    const paidAmount = targetReq?.amount?.base || 400;
+    const workerId = targetReq?.assignedWorkerId;
+
     set((state) => {
       const updatedRequests = state.requests.map((r) => {
         if (r.id === requestId) {
@@ -414,14 +436,31 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
         return r;
       });
-      return { requests: updatedRequests };
+
+      // Automatically credit worker earnings in database
+      const updatedWorkers = state.workers.map((w) => {
+        if (w.id === workerId || (targetReq?.assignedWorkerName && w.name === targetReq.assignedWorkerName)) {
+          const updated = {
+            ...w,
+            jobsCompleted: (w.jobsCompleted || 0) + 1,
+            totalEarnings: (w.totalEarnings || 12000) + paidAmount,
+            monthlyEarnings: (w.monthlyEarnings || 4000) + paidAmount,
+            pendingPayout: (w.pendingPayout || 500) + paidAmount,
+          };
+          saveSupabaseWorker(updated);
+          return updated;
+        }
+        return w;
+      });
+
+      return { requests: updatedRequests, workers: updatedWorkers };
     });
 
     get().addAuditLog(
       "PROCESS_PAYMENT",
       "Consumer",
       "MEMBER",
-      `Paid for request ${requestId} via ${paymentMethod}`
+      `Paid ₹${paidAmount} for request ${requestId} via ${paymentMethod}`
     );
   },
 

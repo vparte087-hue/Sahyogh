@@ -9,13 +9,29 @@ import { Badge } from "@/components/ui/badge";
 
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { workers, requests } = useAppStore();
+  const { workers, requests, currentUser } = useAppStore();
 
-  const worker = workers[0]; // Ramesh Sharma
+  let savedUserId = "";
+  if (typeof window !== "undefined") {
+    try {
+      const saved = localStorage.getItem("sahyog_current_user");
+      if (saved) savedUserId = JSON.parse(saved)?.id || "";
+    } catch (e) {}
+  }
+
+  const activeId = currentUser?.id || savedUserId;
+  const worker =
+    workers.find(
+      (w) =>
+        w.id === activeId ||
+        w.name.toLowerCase() === currentUser?.fullName?.toLowerCase() ||
+        w.workerCode === activeId ||
+        w.phone === currentUser?.phone
+    ) || workers[0];
 
   const activeJob = requests.find(
     (r) =>
-      r.assignedWorkerId === worker.id &&
+      (r.assignedWorkerId === worker.id || r.assignedWorkerName === worker.name) &&
       (r.status === "WORKER_ACCEPTED" || r.status === "IN_PROGRESS" || r.status === "SCHEDULED")
   ) || requests[1];
 

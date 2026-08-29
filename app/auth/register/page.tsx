@@ -52,7 +52,13 @@ function RegisterContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const [mounted, setMounted] = useState(false);
+
   const { setCurrentUser } = useAppStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
@@ -132,6 +138,14 @@ function RegisterContent() {
       avatarBg: "bg-amber-100 text-amber-800",
     },
   }[activeTab];
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[85vh] py-10 px-4 max-w-4xl mx-auto flex items-center justify-center text-gray-400 text-sm">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[85vh] bg-background py-10 px-4 sm:px-6 lg:px-8 space-y-8 max-w-4xl mx-auto" suppressHydrationWarning>

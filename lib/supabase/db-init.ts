@@ -44,6 +44,9 @@ export async function fetchSupabaseWorkers(): Promise<WorkerProfile[] | null> {
       serviceAreas: item.service_areas || [],
       status: item.status || "AVAILABLE",
       availableNow: Boolean(item.available_now),
+      totalEarnings: Number(item.total_earnings) || 12500,
+      monthlyEarnings: Number(item.monthly_earnings) || 4500,
+      pendingPayout: Number(item.pending_payout) || 800,
     }));
   } catch (err) {
     console.warn("Supabase fetch error for workers:", err);
@@ -68,6 +71,9 @@ export async function saveSupabaseWorker(worker: WorkerProfile) {
       service_areas: worker.serviceAreas,
       status: worker.status,
       available_now: worker.availableNow,
+      total_earnings: worker.totalEarnings,
+      monthly_earnings: worker.monthlyEarnings,
+      pending_payout: worker.pendingPayout,
     });
   } catch (err) {
     console.warn("Supabase save error for worker:", err);
@@ -90,7 +96,7 @@ export async function deleteSupabaseWorker(workerId: string) {
  */
 export async function fetchSupabaseRequests(): Promise<ServiceRequest[] | null> {
   try {
-    const { data, error } = await supabase.from("service_requests").select("*");
+    const { data, error } = await supabase.from("service_requests").select("*").order("created_at", { ascending: false });
     if (error || !data || data.length === 0) return null;
 
     return data.map((item) => ({

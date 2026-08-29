@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Clock, MapPin, UploadCloud, CheckCircle2 } from "lucide-react";
+import { PhotoDocumentUpload, PhotoDocument } from "@/components/ui/photo-document-upload";
+import { ArrowLeft, Calendar, Clock, MapPin, AlertTriangle, ShieldAlert, Zap } from "lucide-react";
 
 function NewRequestFormContent() {
   const router = useRouter();
@@ -18,13 +19,14 @@ function NewRequestFormContent() {
 
   const [title, setTitle] = useState("");
   const [problemDescription, setProblemDescription] = useState("");
-  const [preferredDate, setPreferredDate] = useState("2026-08-29");
+  const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "EMERGENCY">("NORMAL");
+  const [preferredDate, setPreferredDate] = useState("2026-08-30");
   const [preferredTimeSlot, setPreferredTimeSlot] = useState("Morning (8am – 12pm)");
   const [houseNo, setHouseNo] = useState("Flat 302, Royal Palms");
   const [locality, setLocality] = useState("Borivali East");
   const [city, setCity] = useState("Mumbai");
   const [pinCode, setPinCode] = useState("400066");
-  const [photoAttached, setPhotoAttached] = useState(false);
+  const [photoDoc, setPhotoDoc] = useState<PhotoDocument | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +39,15 @@ function NewRequestFormContent() {
       problemDescription,
       preferredDate,
       preferredTimeSlot,
+      urgent: urgency === "EMERGENCY" || urgency === "HIGH",
+      urgency: urgency,
       address: {
         houseNo,
         locality,
         city,
         pinCode,
       },
-      evidencePhotos: photoAttached ? ["/sample-leak.jpg"] : [],
+      evidencePhotos: photoDoc ? [photoDoc.fileDataUrl] : [],
     });
 
     router.push(`/consumer/track/${newReqId}`);
@@ -64,7 +68,7 @@ function NewRequestFormContent() {
         </span>
         <h1 className="text-2xl font-bold text-text-primary mt-1">Submit Requirement Details</h1>
         <p className="text-sm text-text-secondary mt-1">
-          Provide your service requirement and schedule preference for cooperative admin review.
+          Provide your service requirement, set service urgency priority, and upload photo evidence.
         </p>
       </div>
 
@@ -87,9 +91,9 @@ function NewRequestFormContent() {
         </Card>
 
         {/* Problem Title & Description */}
-        <Card className="space-y-4">
+        <Card className="space-y-4 bg-white">
           <h3 className="text-xs font-bold tracking-widest text-text-secondary uppercase">
-            1. REQUIREMENT DETAILS
+            1. REQUIREMENT DETAILS &amp; SERVICE URGENCY
           </h3>
 
           <div>
@@ -120,36 +124,99 @@ function NewRequestFormContent() {
             />
           </div>
 
-          {/* Conditional Photo Upload Zone */}
+          {/* SERVICE URGENCY BUTTON SELECTOR */}
           <div className="space-y-2 pt-2 border-t border-gray-100">
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider">
-              UPLOAD PHOTO EVIDENCE (OPTIONAL)
+              PRIORITIZE SERVICE URGENCY *
             </label>
-            <div
-              onClick={() => setPhotoAttached(!photoAttached)}
-              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
-                photoAttached
-                  ? "border-success bg-emerald-50 text-emerald-800"
-                  : "border-gray-300 hover:border-primary text-gray-500"
-              }`}
-            >
-              <UploadCloud className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-              <span className="text-xs font-semibold block">
-                {photoAttached
-                  ? "✓ Photo attached (sample-leak.jpg)"
-                  : "Click to simulate uploading photo of issue"}
-              </span>
-              <span className="text-[10px] text-gray-400 block mt-0.5">
-                Supports JPG, PNG up to 5MB
-              </span>
+            <p className="text-xs text-text-secondary">
+              Select how urgently you require this service dispatch:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Normal Urgency Button */}
+              <button
+                type="button"
+                onClick={() => setUrgency("NORMAL")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  urgency === "NORMAL"
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/30"
+                    : "border-border bg-white text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5">
+                    🟢 Normal Service
+                  </span>
+                  <input type="radio" name="urgency" checked={urgency === "NORMAL"} readOnly />
+                </div>
+                <span className="text-[11px] text-gray-500 block leading-tight">
+                  Standard scheduling during preferred time slot
+                </span>
+              </button>
+
+              {/* High Priority Urgency Button */}
+              <button
+                type="button"
+                onClick={() => setUrgency("HIGH")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  urgency === "HIGH"
+                    ? "border-amber-600 bg-amber-50 text-amber-900 ring-2 ring-amber-500/30"
+                    : "border-border bg-white text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5 text-amber-800">
+                    🟡 Priority Dispatch
+                  </span>
+                  <input type="radio" name="urgency" checked={urgency === "HIGH"} readOnly />
+                </div>
+                <span className="text-[11px] text-amber-700 block leading-tight">
+                  Fast-track assignment within 4-6 hours
+                </span>
+              </button>
+
+              {/* Emergency Urgency Button */}
+              <button
+                type="button"
+                onClick={() => setUrgency("EMERGENCY")}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  urgency === "EMERGENCY"
+                    ? "border-red-600 bg-red-50 text-red-900 ring-2 ring-red-500/30"
+                    : "border-border bg-white text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5 text-red-700">
+                    🔴 Emergency / Urgent
+                  </span>
+                  <input type="radio" name="urgency" checked={urgency === "EMERGENCY"} readOnly />
+                </div>
+                <span className="text-[11px] text-red-600 block leading-tight font-semibold">
+                  Immediate 1-2 hour emergency worker dispatch
+                </span>
+              </button>
             </div>
           </div>
+
+          {/* Interactive Photo Upload Zone with Dropdown */}
+          <PhotoDocumentUpload
+            label="BEFORE WORK PHOTO / ISSUE DOCUMENT EVIDENCE (OPTIONAL)"
+            documentTypes={[
+              "Issue / Damage Site Photo (Before Work)",
+              "Appliance Model / Tag Photo",
+              "Existing Pipeline / Wiring Photo",
+              "Other Reference Document",
+            ]}
+            value={photoDoc}
+            onChange={setPhotoDoc}
+          />
         </Card>
 
         {/* Schedule & Address */}
-        <Card className="space-y-4">
+        <Card className="space-y-4 bg-white">
           <h3 className="text-xs font-bold tracking-widest text-text-secondary uppercase">
-            2. SCHEDULE PREFERENCE & LOCATION
+            2. SCHEDULE PREFERENCE &amp; LOCATION
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -157,15 +224,13 @@ function NewRequestFormContent() {
               <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
                 PREFERRED DATE *
               </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  required
-                  value={preferredDate}
-                  onChange={(e) => setPreferredDate(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-border text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                />
-              </div>
+              <input
+                type="date"
+                required
+                value={preferredDate}
+                onChange={(e) => setPreferredDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-border text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              />
             </div>
 
             <div>
