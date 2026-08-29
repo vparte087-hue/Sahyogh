@@ -14,6 +14,7 @@
     "@tanstack/react-query": "^5.66.0",
     "@types/pg": "^8.23.1",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.7",
     "lucide-react": "^0.475.0",
     "next": "^15.1.7",
     "pg": "^8.23.0",
