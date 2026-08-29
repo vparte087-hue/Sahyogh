@@ -23,7 +23,8 @@ export default function ActiveJobPage({ params }: { params: Promise<{ id: string
   const router = useRouter();
   const { requests, startJob, completeJob } = useAppStore();
 
-  const request = requests.find((r) => r.id === resolvedParams.id) || requests[1];
+  const reqId = resolvedParams.id;
+  const request = requests.find((r) => r.id === reqId) || requests[0];
 
   const [notes, setNotes] = useState(request.completionNotes || "");
   const [photoAttached, setPhotoAttached] = useState(false);

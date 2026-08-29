@@ -30,8 +30,28 @@ function DataInitializer({ children }: { children: React.ReactNode }) {
     // 3. Fetch live Supabase data on app start
     initSupabaseData();
 
+    // 4. Realtime subscription to live database updates across all 3 portals
+    const realtimeChannel = supabase
+      .channel("public-db-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_requests" },
+        () => {
+          initSupabaseData();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "workers" },
+        () => {
+          initSupabaseData();
+        }
+      )
+      .subscribe();
+
     return () => {
       authListener.subscription.unsubscribe();
+      supabase.removeChannel(realtimeChannel);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
