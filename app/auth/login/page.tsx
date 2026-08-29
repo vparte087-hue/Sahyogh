@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { signInUser } from "@/lib/supabase/auth";
+import { supabase } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import {
   User,
@@ -27,6 +28,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  CheckCircle2,
   Loader2,
 } from "lucide-react";
 
@@ -45,6 +47,9 @@ function LoginContent() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isEmailUnconfirmed, setIsEmailUnconfirmed] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const { setCurrentUser } = useAppStore();
 
@@ -54,11 +59,26 @@ function LoginContent() {
     else if (roleParam === "worker") setActiveTab("worker");
     else if (roleParam === "customer") setActiveTab("customer");
     setErrorMsg(null);
+    setIsEmailUnconfirmed(false);
+    setResendSuccess(false);
   }, [searchParams]);
+
+  const handleResendConfirmation = async () => {
+    setResendLoading(true);
+    setResendSuccess(false);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setResendLoading(false);
+    if (!error) {
+      setResendSuccess(true);
+    } else {
+      setErrorMsg("Could not resend confirmation email. Please try again.");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setIsEmailUnconfirmed(false);
     setIsLoading(true);
 
     const { user, error } = await signInUser(email, password);
@@ -66,6 +86,11 @@ function LoginContent() {
     setIsLoading(false);
 
     if (error || !user) {
+      // Detect email-not-confirmed specifically
+      if (error && (error.toLowerCase().includes("email not confirmed") || error.toLowerCase().includes("not confirmed"))) {
+        setIsEmailUnconfirmed(true);
+        return;
+      }
       setErrorMsg(error || "Login failed. Please try again.");
       return;
     }
@@ -205,11 +230,45 @@ function LoginContent() {
             {themeConfig.formTitle}
           </div>
 
-          {/* Error Message */}
+          {/* Generic Error Message */}
           {errorMsg && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
               <span className="text-xs font-medium text-red-700">{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Email Not Confirmed Banner */}
+          {isEmailUnconfirmed && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-amber-800">Email Not Confirmed</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Please confirm your email address before logging in. Check your inbox
+                    for a verification link from Supabase.
+                  </p>
+                </div>
+              </div>
+              {resendSuccess ? (
+                <div className="flex items-center gap-2 text-xs text-green-700 font-medium bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Confirmation email resent! Check your inbox.
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  disabled={resendLoading}
+                  className="w-full py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                >
+                  {resendLoading ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Resending...</>
+                  ) : (
+                    <><Mail className="w-3.5 h-3.5" /> Resend Confirmation Email</>
+                  )}
+                </button>
+              )}
             </div>
           )}
 
