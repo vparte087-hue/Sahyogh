@@ -31,7 +31,10 @@ export function Navbar() {
   };
 
   // Display name: use real user name from Supabase auth, or a portal fallback
-  const displayName = currentUser?.fullName || (
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
+
+  const displayName = (mounted && currentUser?.fullName) || (
     isConsumer ? "My Account" : isAdmin ? "Coordinator" : "Worker"
   );
 
@@ -87,15 +90,16 @@ export function Navbar() {
           </div>
         ) : (
           /* Active Portal Session Header with My Profile & Log Out */
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" suppressHydrationWarning>
             <Link
               href={getProfileLink()}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-white transition-all cursor-pointer shadow-sm"
+              suppressHydrationWarning
             >
               {isConsumer && <User className="w-4 h-4 text-emerald-400" />}
               {isAdmin && <UserCheck className="w-4 h-4 text-accent" />}
               {isWorker && <HardHat className="w-4 h-4 text-amber-400" />}
-              <span className="hidden sm:inline max-w-[120px] truncate">{displayName}</span>
+              <span className="hidden sm:inline max-w-[120px] truncate" suppressHydrationWarning>{displayName}</span>
               <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono">Profile</span>
             </Link>
 

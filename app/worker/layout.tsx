@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HardHat, PlayCircle, History, Star } from "lucide-react";
@@ -10,6 +10,11 @@ import { Badge } from "@/components/ui/badge";
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { workers, requests, currentUser } = useAppStore();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   let savedUserId = "";
   if (typeof window !== "undefined") {
@@ -21,13 +26,15 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
 
   const activeId = currentUser?.id || savedUserId;
   const worker =
-    workers.find(
-      (w) =>
-        w.id === activeId ||
-        w.name.toLowerCase() === currentUser?.fullName?.toLowerCase() ||
-        w.workerCode === activeId ||
-        w.phone === currentUser?.phone
-    ) || workers[0];
+    (mounted &&
+      workers.find(
+        (w) =>
+          w.id === activeId ||
+          w.name.toLowerCase() === currentUser?.fullName?.toLowerCase() ||
+          w.workerCode === activeId ||
+          w.phone === currentUser?.phone
+      )) ||
+    workers[0];
 
   const activeJob = requests.find(
     (r) =>
@@ -46,29 +53,29 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
   return (
     <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Worker Identity Header Card */}
-      <div className="bg-primary text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-accent text-white font-bold text-2xl flex items-center justify-center shadow">
+      <div className="bg-primary text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4" suppressHydrationWarning>
+        <div className="flex items-center gap-4" suppressHydrationWarning>
+          <div className="w-14 h-14 rounded-full bg-accent text-white font-bold text-2xl flex items-center justify-center shadow" suppressHydrationWarning>
             {worker.name.charAt(0)}
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold">{worker.name}</h2>
-              <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-gray-200">
+          <div suppressHydrationWarning>
+            <div className="flex items-center gap-2 flex-wrap" suppressHydrationWarning>
+              <h2 className="text-xl font-bold" suppressHydrationWarning>{worker.name}</h2>
+              <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-gray-200" suppressHydrationWarning>
                 {worker.workerCode}
               </span>
               <Badge variant="verified" />
             </div>
-            <p className="text-xs text-gray-300 mt-0.5">{worker.societyName}</p>
-            <p className="text-xs text-gray-300">Areas: {worker.serviceAreas.join(", ")}</p>
+            <p className="text-xs text-gray-300 mt-0.5" suppressHydrationWarning>{worker.societyName}</p>
+            <p className="text-xs text-gray-300" suppressHydrationWarning>Areas: {worker.serviceAreas.join(", ")}</p>
           </div>
         </div>
 
-        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-3 sm:pt-0 border-white/10">
-          <div className="flex items-center gap-1 font-bold text-accent text-lg">
+        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-3 sm:pt-0 border-white/10" suppressHydrationWarning>
+          <div className="flex items-center gap-1 font-bold text-accent text-lg" suppressHydrationWarning>
             <Star className="w-5 h-5 fill-accent" /> {worker.rating} ★
           </div>
-          <span className="text-xs text-gray-300">{worker.jobsCompleted} Jobs Completed</span>
+          <span className="text-xs text-gray-300" suppressHydrationWarning>{worker.jobsCompleted} Jobs Completed</span>
         </div>
       </div>
 
