@@ -18,6 +18,9 @@ import {
   fetchSupabaseWorkers,
   fetchSupabaseRequests,
   saveSupabaseRequest,
+  deleteSupabaseRequest,
+  saveSupabaseWorker,
+  deleteSupabaseWorker,
 } from "../supabase/db-init";
 
 interface AppState {
@@ -25,7 +28,7 @@ interface AppState {
   activeRole: UserRole;
   isLoggedIn: boolean;
   loggedRole: UserRole | null;
-  
+
   setActiveRole: (role: UserRole) => void;
   loginAsRole: (role: UserRole) => void;
   logout: () => void;
@@ -39,14 +42,22 @@ interface AppState {
   // Database Initialization
   initSupabaseData: () => Promise<void>;
 
-  // Actions
+  // Service Request CRUD Actions
   createRequest: (
     req: Omit<
       ServiceRequest,
       "id" | "status" | "createdAt" | "consumerName" | "consumerPhone" | "amount"
     >
   ) => string;
+  updateRequestStatus: (requestId: string, status: RequestStatus) => void;
+  deleteRequest: (requestId: string) => void;
 
+  // Worker Profile CRUD Actions
+  addWorker: (worker: Omit<WorkerProfile, "id">) => string;
+  updateWorker: (workerId: string, data: Partial<WorkerProfile>) => void;
+  deleteWorker: (workerId: string) => void;
+
+  // Workflow Actions
   assignWorker: (requestId: string, workerId: string) => void;
   acceptJob: (requestId: string) => void;
   rejectJob: (requestId: string, reason: string) => void;
@@ -137,6 +148,82 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     saveSupabaseRequest(newRequest);
     return newId;
+  },
+
+  updateRequestStatus: (requestId, status) => {
+    set((state) => {
+      const updatedRequests = state.requests.map((r) => {
+        if (r.id === requestId) {
+          const updated = { ...r, status };
+          saveSupabaseRequest(updated);
+          return updated;
+        }
+        return r;
+      });
+      return { requests: updatedRequests };
+    });
+  },
+
+  deleteRequest: (requestId) => {
+    set((state) => ({
+      requests: state.requests.filter((r) => r.id !== requestId),
+    }));
+    deleteSupabaseRequest(requestId);
+    get().addAuditLog(
+      "DELETE_REQUEST",
+      "Consumer / Admin",
+      "COOPERATIVE_ADMIN",
+      `Deleted request ${requestId}`
+    );
+  },
+
+  addWorker: (workerData) => {
+    const newWorkerId = `WRK-${String(Math.floor(100 + Math.random() * 900))}`;
+    const newWorker: WorkerProfile = {
+      ...workerData,
+      id: newWorkerId,
+    };
+
+    set((state) => ({
+      workers: [newWorker, ...state.workers],
+    }));
+
+    saveSupabaseWorker(newWorker);
+    get().addAuditLog(
+      "ADD_WORKER",
+      "Meera Kulkarni (Cooperative Admin)",
+      "COOPERATIVE_ADMIN",
+      `Added new worker ${newWorker.name} (${newWorker.workerCode})`
+    );
+
+    return newWorkerId;
+  },
+
+  updateWorker: (workerId, data) => {
+    set((state) => {
+      const updatedWorkers = state.workers.map((w) => {
+        if (w.id === workerId) {
+          const updated = { ...w, ...data };
+          saveSupabaseWorker(updated);
+          return updated;
+        }
+        return w;
+      });
+      return { workers: updatedWorkers };
+    });
+  },
+
+  deleteWorker: (workerId) => {
+    set((state) => ({
+      workers: state.workers.filter((w) => w.id !== workerId),
+    }));
+    deleteSupabaseWorker(workerId);
+    get().addAuditLog(
+      "DELETE_WORKER",
+      "Cooperative Admin",
+      "COOPERATIVE_ADMIN",
+      `Deleted worker profile ${workerId}`
+    );
   },
 
   assignWorker: (requestId, workerId) => {

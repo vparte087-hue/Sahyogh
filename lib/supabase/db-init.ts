@@ -52,6 +52,40 @@ export async function fetchSupabaseWorkers(): Promise<WorkerProfile[] | null> {
 }
 
 /**
+ * Save/Update Worker in Supabase database
+ */
+export async function saveSupabaseWorker(worker: WorkerProfile) {
+  try {
+    await supabase.from("workers").upsert({
+      id: worker.id,
+      name: worker.name,
+      worker_code: worker.workerCode,
+      phone: worker.phone,
+      skills: worker.skills,
+      rating: worker.rating,
+      jobs_completed: worker.jobsCompleted,
+      society_name: worker.societyName,
+      service_areas: worker.serviceAreas,
+      status: worker.status,
+      available_now: worker.availableNow,
+    });
+  } catch (err) {
+    console.warn("Supabase save error for worker:", err);
+  }
+}
+
+/**
+ * Delete Worker from Supabase database
+ */
+export async function deleteSupabaseWorker(workerId: string) {
+  try {
+    await supabase.from("workers").delete().eq("id", workerId);
+  } catch (err) {
+    console.warn("Supabase delete error for worker:", err);
+  }
+}
+
+/**
  * Fetch Service Requests from Supabase database
  */
 export async function fetchSupabaseRequests(): Promise<ServiceRequest[] | null> {
@@ -85,7 +119,7 @@ export async function fetchSupabaseRequests(): Promise<ServiceRequest[] | null> 
 }
 
 /**
- * Insert new Service Request into Supabase database
+ * Insert / Update Service Request in Supabase database
  */
 export async function saveSupabaseRequest(request: ServiceRequest) {
   try {
@@ -109,5 +143,16 @@ export async function saveSupabaseRequest(request: ServiceRequest) {
     });
   } catch (err) {
     console.warn("Supabase save error for service request:", err);
+  }
+}
+
+/**
+ * Delete Service Request from Supabase database
+ */
+export async function deleteSupabaseRequest(requestId: string) {
+  try {
+    await supabase.from("service_requests").delete().eq("id", requestId);
+  } catch (err) {
+    console.warn("Supabase delete error for service request:", err);
   }
 }
