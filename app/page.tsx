@@ -96,15 +96,15 @@ export default function LandingPage() {
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link href="/auth/role-select">
-                <button className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-lg transition-all flex items-center gap-2 cursor-pointer">
+              <Link href="/auth/register?role=customer">
+                <button className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-sm shadow-lg transition-all flex items-center gap-2 cursor-pointer">
                   Get Started <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
 
               <a
                 href="#about"
-                className="px-6 py-3.5 rounded-xl border border-border bg-white text-text-primary hover:bg-gray-50 font-bold text-sm transition-colors"
+                className="px-6 py-3.5 rounded-xl border border-border bg-white text-text-primary hover:bg-gray-50 active:scale-95 font-bold text-sm transition-colors cursor-pointer"
               >
                 Learn More
               </a>
@@ -380,7 +380,7 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <Button variant="accent" size="lg" type="submit" className="w-full sm:w-auto shadow-md">
+                <Button variant="accent" size="lg" type="submit" className="w-full sm:w-auto shadow-md cursor-pointer">
                   Send Message →
                 </Button>
               </form>

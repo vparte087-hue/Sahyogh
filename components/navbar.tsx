@@ -9,7 +9,7 @@ import { ShieldCheck, LogOut, UserCheck } from "lucide-react";
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeRole, isLoggedIn, logout } = useAppStore();
+  const { isLoggedIn, logout } = useAppStore();
 
   const isConsumer = pathname.startsWith("/consumer");
   const isAdmin = pathname.startsWith("/admin");
@@ -68,14 +68,14 @@ export function Navbar() {
 
             <div className="flex items-center gap-2">
               <Link
-                href="/auth/role-select"
-                className="px-4 py-2 rounded-xl border border-white/20 text-xs font-bold text-white hover:bg-white/10 transition-colors"
+                href="/auth/login"
+                className="px-4 py-2 rounded-xl border border-white/20 text-xs font-bold text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm"
               >
                 Login
               </Link>
               <Link
-                href="/auth/role-select"
-                className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 shadow transition-colors"
+                href="/auth/register"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold shadow-md transition-all cursor-pointer inline-flex items-center justify-center"
               >
                 Sign Up
               </Link>
@@ -97,7 +97,7 @@ export function Navbar() {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-white text-xs font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 active:scale-95 border border-red-400/30 text-white text-xs font-bold transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>
