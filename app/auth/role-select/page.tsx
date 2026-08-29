@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
@@ -16,11 +17,9 @@ import {
 
 export default function RoleSelectPage() {
   const router = useRouter();
-  const { loginAsRole } = useAppStore();
 
-  const handleSelectRole = (role: "MEMBER" | "COOPERATIVE_ADMIN" | "WORKER", destination: string) => {
-    loginAsRole(role);
-    router.push(destination);
+  const handleNavigateRole = (roleParam: string) => {
+    router.push(`/auth/login?role=${roleParam}`);
   };
 
   return (
@@ -53,7 +52,7 @@ export default function RoleSelectPage() {
           </div>
 
           <button
-            onClick={() => handleSelectRole("MEMBER", "/consumer/dashboard")}
+            onClick={() => handleNavigateRole("customer")}
             className="w-full py-3.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
           >
             Continue as Customer
@@ -76,7 +75,7 @@ export default function RoleSelectPage() {
           </div>
 
           <button
-            onClick={() => handleSelectRole("COOPERATIVE_ADMIN", "/admin/dashboard")}
+            onClick={() => handleNavigateRole("coordinator")}
             className="w-full py-3.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
           >
             Continue as Coordinator
@@ -99,7 +98,7 @@ export default function RoleSelectPage() {
           </div>
 
           <button
-            onClick={() => handleSelectRole("WORKER", "/worker/jobs")}
+            onClick={() => handleNavigateRole("worker")}
             className="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
           >
             Continue as Worker
