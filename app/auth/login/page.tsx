@@ -230,6 +230,36 @@ function LoginContent() {
             {themeConfig.formTitle}
           </div>
 
+          {/* Demo Credentials Auto-Fill Box */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center justify-between text-xs">
+            <div>
+              <span className="font-bold text-gray-700 block">Demo Credentials</span>
+              <span className="text-gray-500 font-mono">
+                {activeTab === "customer" && "consumer@sahyog.com"}
+                {activeTab === "coordinator" && "coordinator@sahyog.com"}
+                {activeTab === "worker" && "worker@sahyog.com"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail(
+                  activeTab === "customer"
+                    ? "consumer@sahyog.com"
+                    : activeTab === "coordinator"
+                    ? "coordinator@sahyog.com"
+                    : "worker@sahyog.com"
+                );
+                setPassword("Password123!");
+                setErrorMsg(null);
+                setIsEmailUnconfirmed(false);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-primary text-white font-bold text-[11px] hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
+            >
+              Fill Credentials
+            </button>
+          </div>
+
           {/* Generic Error Message */}
           {errorMsg && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
