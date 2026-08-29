@@ -74,17 +74,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Settings className="w-4 h-4" /> Cooperative Settings
           </button>
 
-          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/10 border border-white/10">
+          <Link href="/admin/profile" className="flex items-center gap-3 p-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-all cursor-pointer">
             <div className="w-9 h-9 rounded-lg bg-accent text-white font-black text-xs flex items-center justify-center shadow">
-              MK
+              AD
             </div>
             <div>
-              <span className="font-bold text-xs block text-white">Meera Kulkarni</span>
+              <span className="font-bold text-xs block text-white">Anita Deshmukh</span>
               <span className="text-[10px] text-gray-300 tracking-wider font-mono uppercase block">
-                COORDINATOR
+                COORDINATOR PROFILE
               </span>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
 

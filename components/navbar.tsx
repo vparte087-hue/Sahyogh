@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
-import { ShieldCheck, LogOut, UserCheck } from "lucide-react";
+import { ShieldCheck, LogOut, UserCheck, User, HardHat } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -19,6 +19,13 @@ export function Navbar() {
   const handleLogout = () => {
     logout();
     router.push("/");
+  };
+
+  const getProfileLink = () => {
+    if (isConsumer) return "/consumer/profile";
+    if (isAdmin) return "/admin/profile";
+    if (isWorker) return "/worker/profile";
+    return "/auth/role-select";
   };
 
   return (
@@ -82,18 +89,20 @@ export function Navbar() {
             </div>
           </div>
         ) : (
-          /* Active Portal Session Info & Log Out Button */
+          /* Active Portal Session Header with My Profile & Log Out */
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-xs font-semibold">
-              <UserCheck className="w-4 h-4 text-accent" />
-              <span>
-                {isConsumer
-                  ? "Customer Portal"
-                  : isAdmin
-                  ? "Setu Ops Console"
-                  : "Worker Portal"}
+            <Link
+              href={getProfileLink()}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-white transition-all cursor-pointer shadow-sm"
+            >
+              {isConsumer && <User className="w-4 h-4 text-emerald-400" />}
+              {isAdmin && <UserCheck className="w-4 h-4 text-accent" />}
+              {isWorker && <HardHat className="w-4 h-4 text-amber-400" />}
+              <span className="hidden sm:inline">
+                {isConsumer ? "Neeraj Sharma" : isAdmin ? "Setu Ops Console" : "Deepak Patil"}
               </span>
-            </div>
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono">Profile</span>
+            </Link>
 
             <button
               onClick={handleLogout}
