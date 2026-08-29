@@ -1,15 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Wrench, Zap, Sparkles, Paintbrush, Hammer } from "lucide-react";
+import { Search, Wrench, Zap, Sparkles, Paintbrush, Hammer, RefreshCw } from "lucide-react";
 
 export default function AdminServiceRequestsPage() {
   const router = useRouter();
-  const { requests } = useAppStore();
+  const { requests, initSupabaseData } = useAppStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Refresh from Supabase when coordinator opens requests page
+  useEffect(() => {
+    setIsRefreshing(true);
+    initSupabaseData().finally(() => setIsRefreshing(false));
+  }, [initSupabaseData]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    initSupabaseData().finally(() => setIsRefreshing(false));
+  };
 
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,11 +79,29 @@ export default function AdminServiceRequestsPage() {
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div>
-        <span className="text-xs font-mono text-text-secondary uppercase tracking-widest block">
-          REQUESTS
-        </span>
-        <h1 className="text-2xl font-extrabold text-text-primary mt-1">Service Requests</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs font-mono text-text-secondary uppercase tracking-widest block">
+            REQUESTS
+          </span>
+          <h1 className="text-2xl font-extrabold text-text-primary mt-1">
+            Service Requests
+            {isRefreshing && (
+              <span className="ml-3 text-xs font-normal text-text-secondary inline-flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Loading from database...
+              </span>
+            )}
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-white text-xs font-bold text-text-primary hover:bg-gray-50 transition-all cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Filter Tabs Bar */}

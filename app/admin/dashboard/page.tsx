@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
@@ -21,7 +21,12 @@ import {
 
 export default function AdminOpsDashboard() {
   const router = useRouter();
-  const { requests } = useAppStore();
+  const { requests, initSupabaseData } = useAppStore();
+
+  // Pull fresh data from Supabase every time coordinator opens the dashboard
+  useEffect(() => {
+    initSupabaseData();
+  }, [initSupabaseData]);
 
   const newRequests = requests.filter(
     (r) => r.status === "REQUESTED" || r.status === "UNDER_REVIEW" || r.status === "ASSIGNMENT_PENDING"

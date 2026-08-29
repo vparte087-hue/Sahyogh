@@ -105,11 +105,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         fetchSupabaseRequests(),
       ]);
 
-      set((state) => ({
-        categories: dbCats || state.categories,
-        workers: dbWorkers || state.workers,
-        requests: dbReqs || state.requests,
-      }));
+      set((state) => {
+        // Merge DB records with in-memory ones — DB records take priority for existing IDs
+        // but in-memory-only records (just created) are preserved
+        const mergeById = <T extends { id: string }>(inMemory: T[], fromDb: T[] | null): T[] => {
+          if (!fromDb || fromDb.length === 0) return inMemory;
+          const dbMap = new Map(fromDb.map((r) => [r.id, r]));
+          const inMemoryOnlyNew = inMemory.filter((r) => !dbMap.has(r.id));
+          return [...fromDb, ...inMemoryOnlyNew];
+        };
+
+        return {
+          categories: dbCats || state.categories,
+          workers: mergeById(state.workers, dbWorkers),
+          requests: mergeById(state.requests, dbReqs),
+        };
+      });
     } catch (e) {
       console.warn("Using fallback local dataset for Supabase:", e);
     }
