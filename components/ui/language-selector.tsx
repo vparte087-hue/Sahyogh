@@ -49,13 +49,14 @@ export function LanguageSelector() {
         aria-expanded={isOpen}
         aria-haspopup="true"
         title="Select Language / भाषा चुनें"
+        suppressHydrationWarning
       >
         <Globe
           className={`w-4 h-4 text-accent transition-transform duration-500 ease-in-out ${
             isOpen ? "rotate-180 scale-110" : "group-hover:rotate-45"
           }`}
         />
-        <span className="hidden sm:inline font-medium">Lang</span>
+        <span className="hidden sm:inline font-medium" suppressHydrationWarning>Lang</span>
         <ChevronDown
           className={`w-3 h-3 text-gray-300 transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
@@ -85,6 +86,7 @@ export function LanguageSelector() {
                       ? "bg-accent/20 text-accent font-bold"
                       : "text-gray-200 hover:bg-white/10 hover:text-white"
                   }`}
+                  suppressHydrationWarning
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-sm">{lang.flag}</span>
