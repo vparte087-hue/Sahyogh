@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store/use-app-store";
 import { signOutUser } from "@/lib/supabase/auth";
+import { LanguageSelector } from "@/components/ui/language-selector";
 import { ShieldCheck, LogOut, UserCheck, User, HardHat } from "lucide-react";
 
 export function Navbar() {
@@ -64,7 +65,7 @@ export function Navbar() {
         {/* Dynamic Content: Public Nav vs Role Portal Session Header */}
         {!isPortal ? (
           /* Public Landing Navbar Links */
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-gray-200">
               <Link href="/" className="hover:text-accent transition-colors">Home</Link>
               <a href="#about" className="hover:text-accent transition-colors">About Us</a>
@@ -72,6 +73,8 @@ export function Navbar() {
               <a href="#services" className="hover:text-accent transition-colors">Services</a>
               <a href="#contact" className="hover:text-accent transition-colors">Contact</a>
             </nav>
+
+            <LanguageSelector />
 
             <div className="flex items-center gap-2">
               <Link
@@ -91,6 +94,8 @@ export function Navbar() {
         ) : (
           /* Active Portal Session Header with My Profile & Log Out */
           <div className="flex items-center gap-3" suppressHydrationWarning>
+            <LanguageSelector />
+
             <Link
               href={getProfileLink()}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-white transition-all cursor-pointer shadow-sm"
