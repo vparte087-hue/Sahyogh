@@ -337,7 +337,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4">
+              <form onSubmit={handleContactSubmit} className="space-y-4" suppressHydrationWarning>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
@@ -346,6 +346,7 @@ export default function LandingPage() {
                     <input
                       type="text"
                       required
+                      suppressHydrationWarning
                       value={contactName}
                       onChange={(e) => setContactName(e.target.value)}
                       placeholder="Priya Verma"
@@ -359,6 +360,7 @@ export default function LandingPage() {
                     </label>
                     <input
                       type="email"
+                      suppressHydrationWarning
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                       placeholder="priya@example.com"
@@ -374,6 +376,7 @@ export default function LandingPage() {
                   <textarea
                     rows={4}
                     required
+                    suppressHydrationWarning
                     value={contactMessage}
                     onChange={(e) => setContactMessage(e.target.value)}
                     placeholder="How can Sahyog assist your household or society today?"
@@ -381,7 +384,7 @@ export default function LandingPage() {
                   />
                 </div>
 
-                <Button variant="accent" size="lg" type="submit" className="w-full sm:w-auto shadow-md cursor-pointer">
+                <Button variant="accent" size="lg" type="submit" suppressHydrationWarning className="w-full sm:w-auto shadow-md cursor-pointer">
                   Send Message →
                 </Button>
               </form>

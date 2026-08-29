@@ -37,6 +37,7 @@ export function Button({
   return (
     <button
       disabled={disabled}
+      suppressHydrationWarning
       className={twMerge(
         clsx(baseStyles, variants[variant], sizes[size], fullWidth && "w-full", className)
       )}
