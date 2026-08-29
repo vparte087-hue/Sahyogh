@@ -105,10 +105,12 @@ function RegisterContent() {
   }[activeTab];
 
   return (
-    <div className="min-h-[85vh] bg-background py-10 px-4 sm:px-6 lg:px-8 space-y-8 max-w-4xl mx-auto">
+    <div className="min-h-[85vh] bg-background py-10 px-4 sm:px-6 lg:px-8 space-y-8 max-w-4xl mx-auto" suppressHydrationWarning>
       {/* Role Tab Switcher Bar */}
       <div className="flex items-center justify-center gap-2 p-1.5 bg-gray-200/70 rounded-2xl max-w-md mx-auto shadow-inner">
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("customer")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "customer"
@@ -120,6 +122,8 @@ function RegisterContent() {
         </button>
 
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("coordinator")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "coordinator"
@@ -131,6 +135,8 @@ function RegisterContent() {
         </button>
 
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("worker")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "worker"
@@ -143,7 +149,7 @@ function RegisterContent() {
       </div>
 
       {/* Main Registration Card */}
-      <Card className="p-6 sm:p-10 border border-border shadow-xl space-y-8 bg-white max-w-2xl mx-auto rounded-3xl">
+      <Card className="p-6 sm:p-10 border border-border shadow-xl space-y-8 bg-white max-w-2xl mx-auto rounded-3xl" suppressHydrationWarning>
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-6">
           <div className="space-y-1">
             <span className={`text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block ${themeConfig.tagText}`}>
@@ -169,7 +175,7 @@ function RegisterContent() {
         </div>
 
         {/* Registration Form */}
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-4" suppressHydrationWarning>
           <div>
             <label className="block text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
               Full Name *
@@ -181,6 +187,7 @@ function RegisterContent() {
               <input
                 type="text"
                 required
+                suppressHydrationWarning
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
@@ -204,6 +211,7 @@ function RegisterContent() {
                 <input
                   type="tel"
                   required
+                  suppressHydrationWarning
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   placeholder="Enter 10-digit mobile number"
@@ -224,6 +232,7 @@ function RegisterContent() {
               <input
                 type="email"
                 required={activeTab === "coordinator"}
+                suppressHydrationWarning
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
@@ -245,6 +254,7 @@ function RegisterContent() {
                   <input
                     type="text"
                     required
+                    suppressHydrationWarning
                     value={cooperativeName}
                     onChange={(e) => setCooperativeName(e.target.value)}
                     placeholder="Enter cooperative or society name"
@@ -264,6 +274,7 @@ function RegisterContent() {
                   <input
                     type="text"
                     required
+                    suppressHydrationWarning
                     value={cooperativeId}
                     onChange={(e) => setCooperativeId(e.target.value)}
                     placeholder="Enter cooperative ID"
@@ -286,6 +297,7 @@ function RegisterContent() {
                   </div>
                   <input
                     type="text"
+                    suppressHydrationWarning
                     value={workerId}
                     onChange={(e) => setWorkerId(e.target.value)}
                     placeholder="Enter your worker ID"
@@ -303,6 +315,7 @@ function RegisterContent() {
                     <Wrench className="w-4 h-4" />
                   </div>
                   <select
+                    suppressHydrationWarning
                     value={primarySkill}
                     onChange={(e) => setPrimarySkill(e.target.value)}
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 ${themeConfig.focusRing} bg-white`}
@@ -330,6 +343,7 @@ function RegisterContent() {
                 <input
                   type="text"
                   required
+                  suppressHydrationWarning
                   value={locationCity}
                   onChange={(e) => setLocationCity(e.target.value)}
                   placeholder="Enter your city or area (e.g. Thane West)"
@@ -351,6 +365,7 @@ function RegisterContent() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  suppressHydrationWarning
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
@@ -358,6 +373,7 @@ function RegisterContent() {
                 />
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
@@ -377,6 +393,7 @@ function RegisterContent() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  suppressHydrationWarning
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
@@ -391,6 +408,7 @@ function RegisterContent() {
               <input
                 type="checkbox"
                 required
+                suppressHydrationWarning
                 checked={agreedTerms}
                 onChange={(e) => setAgreedTerms(e.target.checked)}
                 className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -401,6 +419,7 @@ function RegisterContent() {
 
           <button
             type="submit"
+            suppressHydrationWarning
             className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md transition-all cursor-pointer ${themeConfig.primaryColor}`}
           >
             Create Account
@@ -418,6 +437,7 @@ function RegisterContent() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              suppressHydrationWarning
               onClick={handleRegister}
               className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
@@ -425,6 +445,7 @@ function RegisterContent() {
             </button>
             <button
               type="button"
+              suppressHydrationWarning
               onClick={handleRegister}
               className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >

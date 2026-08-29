@@ -105,10 +105,12 @@ function LoginContent() {
   }[activeTab];
 
   return (
-    <div className="min-h-[85vh] bg-background py-10 px-4 sm:px-6 lg:px-8 space-y-8 max-w-4xl mx-auto">
+    <div className="min-h-[85vh] bg-background py-10 px-4 sm:px-6 lg:px-8 space-y-8 max-w-4xl mx-auto" suppressHydrationWarning>
       {/* Role Tab Switcher Bar */}
       <div className="flex items-center justify-center gap-2 p-1.5 bg-gray-200/70 rounded-2xl max-w-md mx-auto shadow-inner">
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("customer")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "customer"
@@ -120,6 +122,8 @@ function LoginContent() {
         </button>
 
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("coordinator")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "coordinator"
@@ -131,6 +135,8 @@ function LoginContent() {
         </button>
 
         <button
+          type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("worker")}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === "worker"
@@ -143,7 +149,7 @@ function LoginContent() {
       </div>
 
       {/* Main Login Card Container */}
-      <Card className="p-6 sm:p-10 border border-border shadow-xl space-y-8 bg-white max-w-2xl mx-auto rounded-3xl">
+      <Card className="p-6 sm:p-10 border border-border shadow-xl space-y-8 bg-white max-w-2xl mx-auto rounded-3xl" suppressHydrationWarning>
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-6">
           <div className="space-y-1">
             <span className={`text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block ${themeConfig.tagText}`}>
@@ -168,7 +174,7 @@ function LoginContent() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-5" suppressHydrationWarning>
           <div className="text-center font-bold text-base text-text-primary">
             {themeConfig.formTitle}
           </div>
@@ -184,6 +190,7 @@ function LoginContent() {
               <input
                 type="text"
                 required
+                suppressHydrationWarning
                 value={mobileOrEmail}
                 onChange={(e) => setMobileOrEmail(e.target.value)}
                 placeholder={
@@ -207,6 +214,7 @@ function LoginContent() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
+                suppressHydrationWarning
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
@@ -214,6 +222,7 @@ function LoginContent() {
               />
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600"
               >
@@ -234,6 +243,7 @@ function LoginContent() {
                 <input
                   type="text"
                   required
+                  suppressHydrationWarning
                   value={cooperativeId}
                   onChange={(e) => setCooperativeId(e.target.value)}
                   placeholder="Enter your Cooperative ID (e.g. COOP-THN-04)"
@@ -255,6 +265,7 @@ function LoginContent() {
                 <input
                   type="text"
                   required
+                  suppressHydrationWarning
                   value={workerId}
                   onChange={(e) => setWorkerId(e.target.value)}
                   placeholder="Enter your Worker ID (e.g. W-042)"
@@ -268,6 +279,7 @@ function LoginContent() {
             <label className="flex items-center gap-2 font-medium text-text-secondary cursor-pointer">
               <input
                 type="checkbox"
+                suppressHydrationWarning
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -282,6 +294,7 @@ function LoginContent() {
 
           <button
             type="submit"
+            suppressHydrationWarning
             className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer ${themeConfig.primaryColor}`}
           >
             Login <ArrowRight className="w-4 h-4" />
@@ -299,6 +312,7 @@ function LoginContent() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              suppressHydrationWarning
               onClick={handleLogin}
               className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
@@ -306,6 +320,7 @@ function LoginContent() {
             </button>
             <button
               type="button"
+              suppressHydrationWarning
               onClick={handleLogin}
               className="py-2.5 px-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-text-primary flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
