@@ -10,7 +10,6 @@ import {
   Briefcase,
   BarChart3,
   Settings,
-  Bell,
   ShieldCheck,
 } from "lucide-react";
 
@@ -98,11 +97,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
 
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg border border-border bg-white text-text-secondary hover:text-primary hover:bg-gray-50 transition-colors relative">
-              <Bell className="w-4 h-4" />
-              <span className="w-2 h-2 rounded-full bg-accent absolute top-1.5 right-1.5" />
-            </button>
-
             <span className="px-3 py-1.5 rounded-lg border border-border bg-white text-xs font-mono font-semibold text-text-secondary">
               THU · 27 AUG
             </span>
