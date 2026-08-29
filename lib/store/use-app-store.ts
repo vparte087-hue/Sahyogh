@@ -21,9 +21,14 @@ import {
 } from "../supabase/db-init";
 
 interface AppState {
-  // Current Active Role
+  // Session & Active Role
   activeRole: UserRole;
+  isLoggedIn: boolean;
+  loggedRole: UserRole | null;
+  
   setActiveRole: (role: UserRole) => void;
+  loginAsRole: (role: UserRole) => void;
+  logout: () => void;
 
   // Domain Collections
   categories: ServiceCategory[];
@@ -57,7 +62,24 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   activeRole: "MEMBER",
+  isLoggedIn: false,
+  loggedRole: null,
+
   setActiveRole: (role) => set({ activeRole: role }),
+
+  loginAsRole: (role) =>
+    set({
+      activeRole: role,
+      isLoggedIn: true,
+      loggedRole: role,
+    }),
+
+  logout: () =>
+    set({
+      activeRole: "MEMBER",
+      isLoggedIn: false,
+      loggedRole: null,
+    }),
 
   categories: INITIAL_CATEGORIES,
   workers: INITIAL_WORKERS,
@@ -113,9 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       `Created service request ${newId} for ${newRequest.categoryName}`
     );
 
-    // Save asynchronously to Supabase
     saveSupabaseRequest(newRequest);
-
     return newId;
   },
 
