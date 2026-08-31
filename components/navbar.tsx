@@ -45,14 +45,14 @@ export function Navbar() {
         {/* Brand Logo & Title */}
         <Link href="/" className="flex items-center gap-3 group">
           <img
-            src="/logo.jpg"
-            alt="Sahyogh Logo"
+            src="/logo.webp"
+            alt="Sahyog Logo"
             className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-md group-hover:scale-105 transition-transform"
           />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-                Sahyogh
+                Sahyog
               </span>
               <span className="bg-accent/20 text-accent font-bold px-2 py-0.5 rounded text-xs">
                 सहयोग

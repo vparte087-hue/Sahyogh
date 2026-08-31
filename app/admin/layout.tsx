@@ -32,8 +32,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Header Branding */}
           <div className="flex items-center gap-3">
             <img
-              src="/logo.jpg"
-              alt="Sahyogh Logo"
+              src="/logo.webp"
+              alt="Sahyog Logo"
               className="w-9 h-9 rounded-xl bg-white p-0.5 object-contain shadow-md"
             />
             <div>
