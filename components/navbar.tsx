@@ -44,13 +44,15 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo & Title */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-accent text-white font-bold flex items-center justify-center text-xl shadow-md group-hover:scale-105 transition-transform">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
+          <img
+            src="/logo.jpg"
+            alt="Sahyogh Logo"
+            className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-md group-hover:scale-105 transition-transform"
+          />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-                Sahyog
+                Sahyogh
               </span>
               <span className="bg-accent/20 text-accent font-bold px-2 py-0.5 rounded text-xs">
                 सहयोग

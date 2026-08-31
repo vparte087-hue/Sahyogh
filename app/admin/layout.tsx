@@ -31,9 +31,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="space-y-8">
           {/* Header Branding */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent text-white font-bold flex items-center justify-center text-lg shadow-md">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            <img
+              src="/logo.jpg"
+              alt="Sahyogh Logo"
+              className="w-9 h-9 rounded-xl bg-white p-0.5 object-contain shadow-md"
+            />
             <div>
               <h2 className="font-extrabold text-sm tracking-wider uppercase">SETU COOPERATIVE</h2>
               <span className="text-[10px] text-gray-300 tracking-widest font-mono uppercase block">
